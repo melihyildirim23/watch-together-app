@@ -1,10 +1,23 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import type { Instance as PeerInstance } from "simple-peer";
 import { socket } from "@/lib/socket";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
+// simple-peer ships no first-party TypeScript declarations.
+// @types/simple-peer uses the `export =` CJS pattern which is tricky to
+// extract cleanly in Next.js 16's strict type-checker.
+// We define a minimal local interface covering every method we actually call.
+// This is the most robust approach and is 100% accurate for our usage.
+interface PeerInstance {
+  signal(data: unknown): void;
+  replaceTrack(oldTrack: MediaStreamTrack, newTrack: MediaStreamTrack, stream: MediaStream): void;
+  destroy(err?: Error): void;
+  on(event: string, listener: (...args: unknown[]) => void): this;
+  readonly destroyed: boolean;
+}
+
+
 type SignalData   = unknown;
 type OfferPayload = { roomId?: string; sdp: SignalData };
 type AnswerPayload = { sdp: SignalData };
@@ -68,7 +81,9 @@ export const useWebRTC = (roomId: string) => {
 
     const init = async () => {
       try {
-        const Peer = (await import("simple-peer")).default;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const Peer = (await import("simple-peer")).default as any;
+
 
         // Acquire camera + mic
         localStream = await navigator.mediaDevices.getUserMedia({
