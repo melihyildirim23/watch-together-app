@@ -1,103 +1,126 @@
-const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
-const cors = require("cors");
+"use strict";
 
+const express = require("express");
+const http    = require("http");
+const { Server } = require("socket.io");
+const cors    = require("cors");
+
+// ---------------------------------------------------------------------------
+// Environment
+// ---------------------------------------------------------------------------
+const PORT        = process.env.PORT || 5000;          // Render sets PORT=10000
+const CORS_ORIGIN = process.env.CORS_ORIGIN || "*";    // Set to your Vercel URL
+
+// ---------------------------------------------------------------------------
+// Express + HTTP
+// ---------------------------------------------------------------------------
 const app = express();
-app.use(cors());
+
+app.use(cors({ origin: CORS_ORIGIN, methods: ["GET", "POST", "OPTIONS"] }));
+app.use(express.json());
+
+// Health-check endpoint — Render pings this to verify the service is alive
+app.get("/health", (_req, res) => res.json({ status: "ok", uptime: process.uptime() }));
 
 const server = http.createServer(app);
 
+// ---------------------------------------------------------------------------
+// Socket.IO
+// ---------------------------------------------------------------------------
 const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-  },
+  cors: { origin: CORS_ORIGIN, methods: ["GET", "POST"] },
+  // Allow polling as fallback in case WebSocket upgrade fails on Render's proxy
+  transports: ["websocket", "polling"],
+  pingTimeout:  60000,
+  pingInterval: 25000,
 });
 
-// ODA STATE
+// ---------------------------------------------------------------------------
+// Room state  { roomId: Set<socketId> }
+// ---------------------------------------------------------------------------
 const rooms = {};
 
+// Helper: clean a socket out of every room it occupies
+function removeFromRooms(socketId) {
+  for (const roomId of Object.keys(rooms)) {
+    const set = rooms[roomId];
+    if (!set.has(socketId)) continue;
+
+    set.delete(socketId);
+    // Notify remaining peer
+    io.to(roomId).emit("peer-disconnected");
+    io.to(roomId).emit("users-in-room", [...set]);
+
+    if (set.size === 0) delete rooms[roomId];
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Connection handler
+// ---------------------------------------------------------------------------
 io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
+  console.log(`[Server] Connected  ${socket.id}`);
 
-  // =========================
-  // JOIN ROOM
-  // =========================
+  // ── JOIN ROOM ────────────────────────────────────────────────────────────
   socket.on("join-room", (roomId) => {
-    if (!rooms[roomId]) {
-      rooms[roomId] = [];
-    }
+    if (typeof roomId !== "string" || !roomId.trim()) return;
 
-    // 🔥 aynı kullanıcıyı 2 kere ekleme FIX
-    if (rooms[roomId].includes(socket.id)) {
+    if (!rooms[roomId]) rooms[roomId] = new Set();
+    const room = rooms[roomId];
+
+    // Already in this room — ignore duplicate join-room emits
+    if (room.has(socket.id)) {
+      console.log(`[Server] ${socket.id} already in ${roomId} — skipping`);
       return;
     }
 
-    // 🔥 max 2 kişi
-    if (rooms[roomId].length >= 2) {
+    // Hard cap: 2 users per room
+    if (room.size >= 2) {
       socket.emit("room-full");
+      console.log(`[Server] ${socket.id} rejected from ${roomId} (full)`);
       return;
     }
 
-    rooms[roomId].push(socket.id);
+    room.add(socket.id);
     socket.join(roomId);
+    // Store which room this socket is in so disconnect can clean up fast
+    socket.data.roomId = roomId;
 
-    console.log(`${socket.id} joined ${roomId}`);
+    console.log(`[Server] ${socket.id} joined ${roomId}  (${room.size}/2)`);
+    io.to(roomId).emit("users-in-room", [...room]);
 
-    // oda bilgisi gönder
-    io.to(roomId).emit("users-in-room", rooms[roomId]);
-
-    // 2 kişi olunca ready sinyali
-    // 🔥 Sadece son katılan kişiyi initiator yapıyoruz (çifte peer oluşumunu engeller)
-    if (rooms[roomId].length === 2) {
+    // Only the 2nd joiner becomes the WebRTC initiator
+    if (room.size === 2) {
+      console.log(`[Server] Room ${roomId} is ready — sending "ready" to ${socket.id}`);
       socket.emit("ready");
     }
   });
 
-  // =========================
-  // WEBRTC SIGNALING
-  // =========================
-
+  // ── WEBRTC SIGNALING ──────────────────────────────────────────────────────
   socket.on("offer", ({ roomId, sdp }) => {
+    console.log(`[Server] offer  ${socket.id} → ${roomId}`);
     socket.to(roomId).emit("offer", { sdp });
   });
 
   socket.on("answer", ({ roomId, sdp }) => {
+    console.log(`[Server] answer ${socket.id} → ${roomId}`);
     socket.to(roomId).emit("answer", { sdp });
   });
 
   socket.on("ice-candidate", ({ roomId, candidate }) => {
-    socket.to(roomId).emit("ice-candidate", {
-      candidate,
-      sender: socket.id,
-    });
+    socket.to(roomId).emit("ice-candidate", { candidate });
   });
 
-  // =========================
-  // DISCONNECT
-  // =========================
-  socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
-
-    for (const roomId in rooms) {
-      rooms[roomId] = rooms[roomId].filter(
-        (id) => id !== socket.id
-      );
-
-      io.to(roomId).emit("users-in-room", rooms[roomId]);
-
-      // boş oda temizle
-      if (rooms[roomId].length === 0) {
-        delete rooms[roomId];
-      }
-    }
+  // ── DISCONNECT ────────────────────────────────────────────────────────────
+  socket.on("disconnect", (reason) => {
+    console.log(`[Server] Disconnected ${socket.id}  reason=${reason}`);
+    removeFromRooms(socket.id);
   });
 });
 
-// =========================
-// START SERVER
-// =========================
-server.listen(5000, () => {
-  console.log("Server running on port 5000");
-});
+// ---------------------------------------------------------------------------
+// Start
+// ---------------------------------------------------------------------------
+server.listen(PORT, () => {
+  console.log(`[Server] Listening on port ${PORT}  CORS_ORIGIN=${CORS_ORIGIN}`);
+});

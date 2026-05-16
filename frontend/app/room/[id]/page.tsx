@@ -17,8 +17,10 @@ export default function Room() {
     shareScreen, 
     isMuted, 
     isVideoOff, 
-    isScreenSharing 
+    isScreenSharing,
+    peerConnected,
   } = useWebRTC(roomId);
+
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -74,9 +76,13 @@ export default function Room() {
           className="absolute inset-0 w-full h-full object-contain md:object-cover bg-black"
         />
       ) : (
-        <div className="flex flex-col items-center justify-center animate-pulse z-0">
+        <div className="flex flex-col items-center justify-center z-0">
           <div className="w-24 h-24 mb-4 rounded-full border-4 border-indigo-500/30 border-t-indigo-500 animate-spin"></div>
-          <p className="text-xl font-medium text-white/70">Waiting for peer to join...</p>
+          {peerConnected ? (
+            <p className="text-xl font-medium text-red-400">Peer left the room</p>
+          ) : (
+            <p className="text-xl font-medium text-white/70">Waiting for peer to join...</p>
+          )}
           <p className="text-sm text-white/40 mt-2">Room ID: {roomId}</p>
         </div>
       )}
@@ -205,7 +211,8 @@ export default function Room() {
 
         <button
           onClick={() => {
-             if (stream) stream.getTracks().forEach(t => t.stop());
+             // Stop ALL tracks via the underlying MediaStream
+             if (stream) stream.getTracks().forEach(t => { try { t.stop(); } catch {} });
              router.push('/');
           }}
           className="p-4 rounded-full bg-red-600 text-white hover:bg-red-700 transition-all duration-300 shadow-lg shadow-red-600/30 border border-red-500 flex items-center justify-center"
