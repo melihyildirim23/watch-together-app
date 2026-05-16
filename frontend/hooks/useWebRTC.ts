@@ -141,7 +141,7 @@ export const useWebRTC = (roomId: string) => {
             setPeerConnected(false);
           });
 
-          peer.on("error", (err) => {
+          peer.on("error", (err: Error) => {
             console.error("[WebRTC] Peer error (initiator):", err);
           });
         });
@@ -186,7 +186,7 @@ export const useWebRTC = (roomId: string) => {
             setPeerConnected(false);
           });
 
-          peer.on("error", (err) => {
+          peer.on("error", (err: Error) => {
             console.error("[WebRTC] Peer error (receiver):", err);
           });
 
