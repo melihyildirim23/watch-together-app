@@ -76,44 +76,60 @@ export const useWebRTC = (roomId: string) => {
   // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!roomId) return;
-
+    let isMounted = true;
     let localStream: MediaStream | null = null;
+    let bufferedInitiatorId: string | null = null;
 
     const init = async () => {
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const Peer = (await import("simple-peer")).default as any;
 
+        // 1. Ensure Socket is strictly connected before proceeding
+        if (!socket.connected) {
+          socket.connect();
+          await new Promise<void>((resolve) => {
+            const onConnect = () => {
+              console.log("[WebRTC] SOCKET CONNECTED");
+              socket.off("connect", onConnect);
+              resolve();
+            };
+            socket.on("connect", onConnect);
+          });
+        }
 
-        // Acquire camera + mic
-        localStream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
-        });
-        setStream(localStream);
+        if (!isMounted) return;
 
-        // ── Socket lifecycle ─────────────────────────────────────────────────
-        // Connect on room entry, disconnect on leave
-        if (!socket.connected) socket.connect();
-
-        // Remove any stale listeners before re-attaching (StrictMode / hot-reload)
-        socket.off("ready");
+        // 2. Attach listeners BEFORE emitting join-room to ensure no event is missed
+        socket.off("peer-ready");
         socket.off("offer");
         socket.off("answer");
         socket.off("peer-disconnected");
 
-        socket.emit("join-room", roomId);
+        // Helper to initialize Peer only when all conditions are met
+        const tryCreatePeer = (initiatorId: string) => {
+          if (!localStream) {
+            console.log("[WebRTC] Stream not ready yet, buffering peer-ready...");
+            bufferedInitiatorId = initiatorId;
+            return;
+          }
 
-        // ── READY ─────────────────────────────────────────────────────────────
-        socket.on("ready", () => {
-          if (hasPeerStarted.current) return;
+          console.log("[WebRTC] PEER READY RECEIVED");
+          if (peerRef.current) {
+            console.warn("[WebRTC] Destroying existing stale peer instance...");
+            try { if (!peerRef.current.destroyed) peerRef.current.destroy(); } catch (err) {}
+            peerRef.current = null;
+          }
           hasPeerStarted.current = true;
 
-          console.log("[WebRTC] ready → creating initiator peer");
+          const isInitiator = socket.id === initiatorId;
+          console.log(`[WebRTC] INITIATOR STATUS: ${isInitiator ? "TRUE" : "FALSE"}`);
+          console.log("[WebRTC] PEER CREATED");
+
           const peer = new Peer({
-            initiator: true,
+            initiator: isInitiator,
             trickle:   true,
-            stream:    localStream!,
+            stream:    localStream,
             config:    ICE_SERVERS,
           });
 
@@ -121,90 +137,56 @@ export const useWebRTC = (roomId: string) => {
           peerRef.current      = peer;
 
           peer.on("signal", (data: SignalData) => {
-            socket.emit("offer", { roomId, sdp: data } as OfferPayload);
+            if (isInitiator) {
+              console.log("[WebRTC] OFFER CREATED");
+              socket.emit("offer", { roomId, sdp: data } as OfferPayload);
+              console.log("[WebRTC] OFFER SENT");
+            } else {
+              socket.emit("answer", { roomId, sdp: data } as AnswerPayload);
+            }
           });
 
           peer.on("stream", (remote: MediaStream) => {
-            console.log("[WebRTC] Remote stream received (initiator)");
             setRemoteStream(remote);
             setPeerConnected(true);
           });
 
           peer.on("connect", () => {
-            console.log("[WebRTC] Peer data-channel connected (initiator)");
+            console.log("[WebRTC] PEER CONNECTED");
             setPeerConnected(true);
           });
 
           peer.on("close", () => {
-            console.log("[WebRTC] Peer closed (initiator)");
             isPeerActive.current = false;
             setPeerConnected(false);
           });
 
           peer.on("error", (err: Error) => {
-            console.error("[WebRTC] Peer error (initiator):", err);
+            console.error("[WebRTC] Peer error:", err);
           });
+        };
+
+        // Attach peer-ready listener
+        socket.on("peer-ready", ({ initiatorId }: { initiatorId: string }) => {
+          tryCreatePeer(initiatorId);
         });
 
-        // ── OFFER ──────────────────────────────────────────────────────────────
+        // ── OFFER (Received by Receiver) ──
         socket.on("offer", (data: OfferPayload) => {
-          // Already have a peer → just forward the SDP (trickle ICE)
-          if (peerRef.current && !peerRef.current.destroyed) {
-            safePeer("forward offer SDP", (p) => p.signal(data.sdp));
-            return;
-          }
-
-          console.log("[WebRTC] offer received → creating receiver peer");
-          const peer = new Peer({
-            initiator: false,
-            trickle:   true,
-            stream:    localStream!,
-            config:    ICE_SERVERS,
+          safePeer("process offer", (p) => {
+            try { p.signal(data.sdp); } catch (err) {}
           });
-
-          isPeerActive.current = true;
-          peerRef.current      = peer;
-
-          peer.on("signal", (answer: SignalData) => {
-            socket.emit("answer", { roomId, sdp: answer } as AnswerPayload);
-          });
-
-          peer.on("stream", (remote: MediaStream) => {
-            console.log("[WebRTC] Remote stream received (receiver)");
-            setRemoteStream(remote);
-            setPeerConnected(true);
-          });
-
-          peer.on("connect", () => {
-            console.log("[WebRTC] Peer data-channel connected (receiver)");
-            setPeerConnected(true);
-          });
-
-          peer.on("close", () => {
-            console.log("[WebRTC] Peer closed (receiver)");
-            isPeerActive.current = false;
-            setPeerConnected(false);
-          });
-
-          peer.on("error", (err: Error) => {
-            console.error("[WebRTC] Peer error (receiver):", err);
-          });
-
-          try {
-            peer.signal(data.sdp);
-          } catch (err) {
-            console.error("[WebRTC] Failed to signal initial offer:", err);
-          }
         });
 
-        // ── ANSWER ─────────────────────────────────────────────────────────────
+        // ── ANSWER (Received by Initiator) ──
         socket.on("answer", (data: AnswerPayload) => {
-          safePeer("process answer SDP", (p) => p.signal(data.sdp));
+          console.log("[WebRTC] ANSWER RECEIVED");
+          safePeer("process answer", (p) => {
+            try { p.signal(data.sdp); } catch (err) {}
+          });
         });
 
-        // ── PEER DISCONNECTED (server event) ───────────────────────────────────
         socket.on("peer-disconnected", () => {
-          console.log("[WebRTC] Remote peer disconnected");
           setRemoteStream(null);
           setPeerConnected(false);
         });
@@ -218,10 +200,11 @@ export const useWebRTC = (roomId: string) => {
 
     // ── Cleanup ──────────────────────────────────────────────────────────────
     return () => {
+      isMounted = false;
       console.log("[WebRTC] Cleanup running...");
 
       // 1. Detach socket listeners
-      socket.off("ready");
+      socket.off("peer-ready");
       socket.off("offer");
       socket.off("answer");
       socket.off("peer-disconnected");

@@ -89,10 +89,13 @@ io.on("connection", (socket) => {
     console.log(`[Server] ${socket.id} joined ${roomId}  (${room.size}/2)`);
     io.to(roomId).emit("users-in-room", [...room]);
 
-    // Only the 2nd joiner becomes the WebRTC initiator
+    // When the room reaches 2, emit "peer-ready" to the whole room with a controlled delay.
+    // This prevents any race condition where the client might not have its listeners fully attached.
     if (room.size === 2) {
-      console.log(`[Server] Room ${roomId} is ready — sending "ready" to ${socket.id}`);
-      socket.emit("ready");
+      console.log(`[Server] Room ${roomId} reached 2 users. Emitting "peer-ready" in 500ms...`);
+      setTimeout(() => {
+        io.to(roomId).emit("peer-ready", { initiatorId: socket.id });
+      }, 500);
     }
   });
 
