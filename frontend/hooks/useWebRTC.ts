@@ -78,14 +78,27 @@ export const useWebRTC = (roomId: string) => {
     if (!roomId) return;
     let isMounted = true;
     let localStream: MediaStream | null = null;
-    let bufferedInitiatorId: string | null = null;
 
     const init = async () => {
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const Peer = (await import("simple-peer")).default as any;
 
-        // 1. Ensure Socket is strictly connected before proceeding
+        // 1. Acquire media FIRST (this takes time and user permission)
+        localStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
+        });
+
+        // StrictMode Unmount Guard
+        if (!isMounted) {
+          localStream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        console.log("[WebRTC] LOCAL STREAM READY");
+        setStream(localStream);
+
+        // 2. Ensure Socket is fully connected
         if (!socket.connected) {
           socket.connect();
           await new Promise<void>((resolve) => {
@@ -97,24 +110,18 @@ export const useWebRTC = (roomId: string) => {
             socket.on("connect", onConnect);
           });
         }
-
+        
         if (!isMounted) return;
 
-        // 2. Attach listeners BEFORE emitting join-room to ensure no event is missed
+        // 3. Attach listeners BEFORE emitting join-room
         socket.off("peer-ready");
         socket.off("offer");
         socket.off("answer");
         socket.off("peer-disconnected");
 
-        // Helper to initialize Peer only when all conditions are met
-        const tryCreatePeer = (initiatorId: string) => {
-          if (!localStream) {
-            console.log("[WebRTC] Stream not ready yet, buffering peer-ready...");
-            bufferedInitiatorId = initiatorId;
-            return;
-          }
-
+        socket.on("peer-ready", ({ initiatorId }: { initiatorId: string }) => {
           console.log("[WebRTC] PEER READY RECEIVED");
+          
           if (peerRef.current) {
             console.warn("[WebRTC] Destroying existing stale peer instance...");
             try { if (!peerRef.current.destroyed) peerRef.current.destroy(); } catch (err) {}
@@ -123,13 +130,13 @@ export const useWebRTC = (roomId: string) => {
           hasPeerStarted.current = true;
 
           const isInitiator = socket.id === initiatorId;
-          console.log(`[WebRTC] INITIATOR STATUS: ${isInitiator ? "TRUE" : "FALSE"}`);
+          console.log(`[WebRTC] INITIATOR TRUE/FALSE: ${isInitiator ? "TRUE" : "FALSE"}`);
           console.log("[WebRTC] PEER CREATED");
 
           const peer = new Peer({
             initiator: isInitiator,
             trickle:   true,
-            stream:    localStream,
+            stream:    streamRef.current || localStream!,
             config:    ICE_SERVERS,
           });
 
@@ -164,21 +171,14 @@ export const useWebRTC = (roomId: string) => {
           peer.on("error", (err: Error) => {
             console.error("[WebRTC] Peer error:", err);
           });
-        };
-
-        // Attach peer-ready listener
-        socket.on("peer-ready", ({ initiatorId }: { initiatorId: string }) => {
-          tryCreatePeer(initiatorId);
         });
 
-        // ── OFFER (Received by Receiver) ──
         socket.on("offer", (data: OfferPayload) => {
           safePeer("process offer", (p) => {
             try { p.signal(data.sdp); } catch (err) {}
           });
         });
 
-        // ── ANSWER (Received by Initiator) ──
         socket.on("answer", (data: AnswerPayload) => {
           console.log("[WebRTC] ANSWER RECEIVED");
           safePeer("process answer", (p) => {
@@ -190,6 +190,11 @@ export const useWebRTC = (roomId: string) => {
           setRemoteStream(null);
           setPeerConnected(false);
         });
+
+        // 4. HANDSHAKE: Emit join-room ONLY when media is ready, socket is connected, and listeners are attached.
+        // This guarantees that if the server replies with peer-ready, we will never miss it.
+        console.log("[WebRTC] JOIN REQUEST SENT");
+        socket.emit("join-room", roomId);
 
       } catch (err) {
         console.error("[WebRTC] init failed:", err);
@@ -322,17 +327,11 @@ export const useWebRTC = (roomId: string) => {
 
       const oldTrack = stream.getVideoTracks()[0];
 
-      // Attempt track replacement — abort if peer is inactive
+      // Attempt track replacement — if peer is active, update it dynamically.
+      // If peer is NOT active yet (e.g. waiting for user), we skip replaceTrack 
+      // but still update our local state so the next Peer gets the screen track instantly!
       if (oldTrack) {
-        const replaced = safePeer("camera→screen", (p) =>
-          p.replaceTrack(oldTrack, screenTrack, stream),
-        );
-        if (!replaced) {
-          console.warn("[WebRTC] replaceTrack blocked — aborting screen share");
-          screenTrack.stop();
-          screenStreamRef.current = null;
-          return;
-        }
+        safePeer("camera→screen", (p) => p.replaceTrack(oldTrack, screenTrack, stream));
       }
 
       // Restore camera when user clicks browser "Stop sharing"

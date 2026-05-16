@@ -89,13 +89,12 @@ io.on("connection", (socket) => {
     console.log(`[Server] ${socket.id} joined ${roomId}  (${room.size}/2)`);
     io.to(roomId).emit("users-in-room", [...room]);
 
-    // When the room reaches 2, emit "peer-ready" to the whole room with a controlled delay.
-    // This prevents any race condition where the client might not have its listeners fully attached.
+    // Deterministic Peer setup trigger
+    // Since clients only emit 'join-room' AFTER their media and listeners are fully ready,
+    // we can safely emit 'peer-ready' instantly without any artificial delays.
     if (room.size === 2) {
-      console.log(`[Server] Room ${roomId} reached 2 users. Emitting "peer-ready" in 500ms...`);
-      setTimeout(() => {
-        io.to(roomId).emit("peer-ready", { initiatorId: socket.id });
-      }, 500);
+      console.log(`[Server] Room ${roomId} reached 2 users. Emitting "peer-ready" immediately.`);
+      io.to(roomId).emit("peer-ready", { initiatorId: socket.id });
     }
   });
 
