@@ -31,9 +31,9 @@ export default function Room() {
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isImmersive, setIsImmersive] = useState(false);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [activeReactions, setActiveReactions] = useState<{ id: number, emoji: string }[]>([]);
   const reactionIdCounter = useRef(0);
+  const emojiInputRef = useRef<HTMLInputElement>(null);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     setIsDragging(true);
@@ -105,13 +105,20 @@ export default function Room() {
 
   const sendReaction = (emoji: string) => {
     socket.emit("reaction", { roomId, reaction: emoji });
-    setShowEmojiPicker(false);
     // Show locally
     const id = reactionIdCounter.current++;
     setActiveReactions((prev) => [...prev, { id, emoji }]);
     setTimeout(() => {
       setActiveReactions((prev) => prev.filter((r) => r.id !== id));
     }, 3000);
+  };
+
+  const handleEmojiInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (val) {
+      sendReaction(val);
+      e.target.value = ''; // clear input after sending
+    }
   };
 
   return (
@@ -290,31 +297,24 @@ export default function Room() {
 
           <div className="w-px h-8 md:h-10 bg-white/10 mx-1 md:mx-2"></div>
 
-          {/* EMOJI BUTTON */}
+          {/* EMOJI BUTTON (Native Keyboard) */}
           <div className="relative flex items-center">
+            <input
+              ref={emojiInputRef}
+              type="text"
+              onChange={handleEmojiInput}
+              className="absolute w-1 h-1 opacity-0 pointer-events-none"
+              placeholder="Emoji"
+            />
             <button
-              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+              onClick={() => emojiInputRef.current?.focus()}
               className="flex-shrink-0 p-3 md:p-4 rounded-full bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20 transition-all duration-300 shadow-lg flex items-center justify-center"
-              title="Send Reaction"
+              title="Send Reaction (Open Keyboard)"
             >
               <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </button>
-
-            {showEmojiPicker && (
-              <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 flex gap-1 md:gap-2 p-2 md:p-3 bg-zinc-800/95 backdrop-blur-md rounded-2xl shadow-xl border border-white/10">
-                {['👍', '❤️', '😂', '😲', '🎉', '🔥'].map(emoji => (
-                  <button 
-                    key={emoji} 
-                    className="text-xl md:text-2xl hover:scale-125 transition-transform"
-                    onClick={() => sendReaction(emoji)}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* IMMERSIVE MODE BUTTON */}

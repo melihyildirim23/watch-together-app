@@ -1,14 +1,14 @@
 "use strict";
 
 const express = require("express");
-const http    = require("http");
+const http = require("http");
 const { Server } = require("socket.io");
-const cors    = require("cors");
+const cors = require("cors");
 
 // ---------------------------------------------------------------------------
 // Environment
 // ---------------------------------------------------------------------------
-const PORT        = process.env.PORT || 5000;          // Render sets PORT=10000
+const PORT = process.env.PORT || 5000;          // Render sets PORT=10000
 const CORS_ORIGIN = process.env.CORS_ORIGIN || "*";    // Set to your Vercel URL
 
 // ---------------------------------------------------------------------------
@@ -31,7 +31,7 @@ const io = new Server(server, {
   cors: { origin: CORS_ORIGIN, methods: ["GET", "POST"] },
   // Allow polling as fallback in case WebSocket upgrade fails on Render's proxy
   transports: ["websocket", "polling"],
-  pingTimeout:  60000,
+  pingTimeout: 60000,
   pingInterval: 25000,
 });
 
@@ -129,4 +129,4 @@ io.on("connection", (socket) => {
 // ---------------------------------------------------------------------------
 server.listen(PORT, () => {
   console.log(`[Server] Listening on port ${PORT}  CORS_ORIGIN=${CORS_ORIGIN}`);
-});
+});

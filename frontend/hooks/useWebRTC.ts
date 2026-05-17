@@ -354,16 +354,36 @@ export const useWebRTC = (roomId: string) => {
       return;
     }
 
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+      alert("Cihazınız veya tarayıcınız ekran paylaşımını desteklemiyor (Örn: iOS Safari'de sınırlamalar olabilir).");
+      return;
+    }
+
     try {
       console.log("[WebRTC] Requesting display media with audio...");
-      const screenStream = await navigator.mediaDevices.getDisplayMedia({
-        video: {
-          width: { max: 1920 },
-          height: { max: 1080 },
-          frameRate: { max: 30 }
-        },
-        audio: true // Prompt user to share system/tab audio
-      });
+      let screenStream: MediaStream;
+      
+      try {
+        screenStream = await navigator.mediaDevices.getDisplayMedia({
+          video: {
+            width: { max: 1920 },
+            height: { max: 1080 },
+            frameRate: { max: 30 }
+          },
+          audio: true // Prompt user to share system/tab audio
+        });
+      } catch (audioErr) {
+        console.warn("[WebRTC] Failed with audio, trying without audio...", audioErr);
+        // Fallback for mobile/safari that might reject audio:true for display media
+        screenStream = await navigator.mediaDevices.getDisplayMedia({
+          video: {
+            width: { max: 1920 },
+            height: { max: 1080 },
+            frameRate: { max: 30 }
+          }
+        });
+      }
+
       screenStreamRef.current = screenStream;
       const screenTrack = screenStream.getVideoTracks()[0];
       const screenAudioTrack = screenStream.getAudioTracks()[0];
@@ -399,8 +419,11 @@ export const useWebRTC = (roomId: string) => {
       setStream(next);
       setIsScreenSharing(true);
     } catch (err) {
-      // User cancelled the picker — silent cleanup
-      console.warn("[WebRTC] Screen share aborted:", err);
+      // User cancelled the picker or it failed entirely
+      console.warn("[WebRTC] Screen share aborted or failed:", err);
+      if (err instanceof Error && err.name !== 'NotAllowedError') {
+         alert("Ekran paylaşımı başlatılamadı: " + err.message);
+      }
       if (screenStreamRef.current) {
         screenStreamRef.current.getTracks().forEach((t) => { try { t.stop(); } catch { } });
         screenStreamRef.current = null;
