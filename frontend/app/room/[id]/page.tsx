@@ -8,9 +8,12 @@ import { socket } from "@/lib/socket";
 type ReactionItem = { id: number; type: "emoji" | "gif"; content: string };
 
 const QUICK_EMOJIS = [
-  "👍","❤️","😂","😮","🎉","🔥","😍","🥰","🤩","😭",
-  "🙌","💯","✨","😎","🤣","😱","💪","🥳","😊","🫶",
-  "👏","💥","🙏","😴","🤔","😅","💀","🫠","🤯","🫡",
+  "👍","❤️","😂","😮","🎉","🔥","😍","🙌","💯","✨",
+  "😀","😅","🤣","😭","😱","😎","🥰","🤩","😴","🤔",
+  "😤","🥳","🫶","💀","🫠","🤯","🫡","😏","🤭","😋",
+  "👏","💪","🙏","🫂","🤞","✌️","🤙","👋","🫵","💅",
+  "💔","💕","💖","💗","💝","🧡","💛","💚","💙","💜",
+  "🎮","🏆","💥","⚡","🌟","🎯","🚀","👀","💤","🤑",
 ];
 
 const GIFS = [
@@ -18,10 +21,32 @@ const GIFS = [
   { label: "🔥", url: "https://media.giphy.com/media/5VKbvrjxpVJCM/giphy.gif" },
   { label: "😂", url: "https://media.giphy.com/media/Vbtc9VG53qLCg/giphy.gif" },
   { label: "🎉", url: "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif" },
-  { label: "😍", url: "https://media.giphy.com/media/26Ff3yDMoOp5ySMkc/giphy.gif" },
+  { label: "❤️", url: "https://media.giphy.com/media/26Ff3yDMoOp5ySMkc/giphy.gif" },
   { label: "👏", url: "https://media.giphy.com/media/l0MYEqEzwMWFCg8rm/giphy.gif" },
   { label: "😮", url: "https://media.giphy.com/media/26ufdipQqU84H52sg/giphy.gif" },
   { label: "💪", url: "https://media.giphy.com/media/l0HlvtIPzPdt2uO0E/giphy.gif" },
+  { label: "😭", url: "https://media.giphy.com/media/xT9IgG50Lg7rusyxfm/giphy.gif" },
+  { label: "🤦", url: "https://media.giphy.com/media/3og0IPikp8PxHbyK2Y/giphy.gif" },
+  { label: "😴", url: "https://media.giphy.com/media/l46Cy1rHbQ92uuLXa/giphy.gif" },
+  { label: "💃", url: "https://media.giphy.com/media/l0MYGb1vogBi9sFKo/giphy.gif" },
+  { label: "😄", url: "https://media.giphy.com/media/5GoVLqeAOo6PK/giphy.gif" },
+  { label: "😢", url: "https://media.giphy.com/media/ISOckXUybVfQ4/giphy.gif" },
+  { label: "😠", url: "https://media.giphy.com/media/l1IY5NRhxqIn22Vfa/giphy.gif" },
+  { label: "✅", url: "https://media.giphy.com/media/xT9DPpf0zTqRASyzgA/giphy.gif" },
+  { label: "❌", url: "https://media.giphy.com/media/1iTX97yx7H6K4/giphy.gif" },
+  { label: "😱", url: "https://media.giphy.com/media/90F8aUepslB84/giphy.gif" },
+  { label: "😎", url: "https://media.giphy.com/media/jQumaiwjA3sHW/giphy.gif" },
+  { label: "🤩", url: "https://media.giphy.com/media/3o7TKMt1VVNkHV2PaE/giphy.gif" },
+  { label: "🎊", url: "https://media.giphy.com/media/3oEjHV0z8S7WM4KV7i/giphy.gif" },
+  { label: "😬", url: "https://media.giphy.com/media/l3vRnHhk5cUGBJRaa/giphy.gif" },
+  { label: "🏆", url: "https://media.giphy.com/media/26u4lOMA8JKSnL9Uk/giphy.gif" },
+  { label: "💯", url: "https://media.giphy.com/media/DhstvI3zZ598Nb1rFf/giphy.gif" },
+  { label: "🤣", url: "https://media.giphy.com/media/kiOvNHLSKBESk/giphy.gif" },
+  { label: "🫶", url: "https://media.giphy.com/media/26AHLNnJ4UlOhFD7W/giphy.gif" },
+  { label: "🥳", url: "https://media.giphy.com/media/26tOZ42Mg6pbTUPHW/giphy.gif" },
+  { label: "🚀", url: "https://media.giphy.com/media/3o7WTBGtbSCEsaU4s0/giphy.gif" },
+  { label: "💀", url: "https://media.giphy.com/media/MCfhrrNN1goH6/giphy.gif" },
+  { label: "👀", url: "https://media.giphy.com/media/3ohc10nduj1irsuzgA/giphy.gif" },
 ];
 
 export default function Room() {
@@ -29,7 +54,7 @@ export default function Room() {
   const router = useRouter();
   const roomId = params.id as string;
 
-  const { stream, remoteStream, toggleMute, toggleVideo, shareScreen, isMuted, isVideoOff, isScreenSharing, peerConnected } = useWebRTC(roomId);
+  const { stream, remoteStream, toggleMute, toggleVideo, shareScreen, isMuted, isVideoOff, isScreenSharing, peerConnected, screenShareError } = useWebRTC(roomId);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -60,7 +85,6 @@ export default function Room() {
   useEffect(() => { if (localVideoRef.current && stream) localVideoRef.current.srcObject = stream; }, [stream]);
   useEffect(() => { if (remoteVideoRef.current && remoteStream) remoteVideoRef.current.srcObject = remoteStream; }, [remoteStream]);
 
-  // Show reaction locally + broadcast
   const showReaction = useCallback((type: "emoji" | "gif", content: string) => {
     const id = reactionIdCounter.current++;
     setActiveReactions(prev => [...prev, { id, type, content }]);
@@ -74,9 +98,7 @@ export default function Room() {
   }, [roomId, showReaction]);
 
   useEffect(() => {
-    const handler = ({ type, content }: { type: "emoji" | "gif"; content: string }) => {
-      showReaction(type, content);
-    };
+    const handler = ({ type, content }: { type: "emoji" | "gif"; content: string }) => showReaction(type, content);
     socket.on("reaction", handler);
     return () => { socket.off("reaction", handler); };
   }, [showReaction]);
@@ -99,7 +121,6 @@ export default function Room() {
   return (
     <div className="w-screen h-screen bg-[#0f0f11] relative overflow-hidden flex items-center justify-center font-sans text-white">
 
-      {/* ANIMATION CSS */}
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes popInFadeOut {
           0%   { transform: translate(-50%,-50%) scale(0.1); opacity:0; }
@@ -108,7 +129,7 @@ export default function Room() {
           80%  { transform: translate(-50%,-50%) scale(1);   opacity:1; }
           100% { transform: translate(-50%,-60%) scale(0.85); opacity:0; }
         }
-        .reaction-pop { animation: popInFadeOut 3.5s forwards; }
+        .reaction-pop { animation: popInFadeOut 3.5s forwards; position:absolute; left:50%; top:50%; }
       `}} />
 
       {/* REMOTE VIDEO */}
@@ -128,7 +149,7 @@ export default function Room() {
       {/* ACTIVE REACTIONS */}
       <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden">
         {activeReactions.map(r => (
-          <div key={r.id} className="reaction-pop absolute left-1/2 top-1/2 drop-shadow-2xl">
+          <div key={r.id} className="reaction-pop drop-shadow-2xl">
             {r.type === "emoji"
               ? <span className="text-7xl md:text-9xl">{r.content}</span>
               : <img src={r.content} alt="reaction" className="w-40 h-40 md:w-56 md:h-56 object-contain rounded-2xl" />
@@ -136,6 +157,13 @@ export default function Room() {
           </div>
         ))}
       </div>
+
+      {/* SCREEN SHARE ERROR TOAST */}
+      {screenShareError && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-red-900/90 text-white px-5 py-3 rounded-2xl text-sm border border-red-500/50 backdrop-blur-md max-w-xs text-center shadow-xl">
+          📵 {screenShareError}
+        </div>
+      )}
 
       {/* TOP BAR */}
       {!isImmersive && (
@@ -171,8 +199,7 @@ export default function Room() {
 
       {/* REACTION PANEL */}
       {showReactionPanel && (
-        <div className="absolute bottom-24 md:bottom-28 left-1/2 -translate-x-1/2 z-40 bg-zinc-900/95 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl overflow-hidden w-[92vw] sm:w-96">
-          {/* Tabs */}
+        <div className="absolute bottom-24 md:bottom-28 left-1/2 -translate-x-1/2 z-40 bg-zinc-900/95 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl overflow-hidden w-[94vw] sm:w-[420px]">
           <div className="flex border-b border-white/10">
             {(["emoji", "gif"] as const).map(tab => (
               <button key={tab} onClick={() => setReactionTab(tab)}
@@ -180,28 +207,27 @@ export default function Room() {
                 {tab === "emoji" ? "😀 Emoji" : "🎥 GIF"}
               </button>
             ))}
-            <button onClick={() => setShowReactionPanel(false)} className="px-4 text-white/40 hover:text-white/80 text-lg">✕</button>
+            <button onClick={() => setShowReactionPanel(false)} className="px-4 text-white/40 hover:text-white/80 text-xl leading-none pb-0.5">✕</button>
           </div>
 
-          {/* Emoji Grid */}
           {reactionTab === "emoji" && (
-            <div className="grid grid-cols-6 gap-1 p-3 max-h-52 overflow-y-auto">
+            <div className="grid grid-cols-6 gap-0.5 p-3 max-h-56 overflow-y-auto">
               {QUICK_EMOJIS.map(e => (
                 <button key={e} onClick={() => sendReaction("emoji", e)}
-                  className="text-2xl md:text-3xl p-1.5 rounded-xl hover:bg-white/10 active:scale-125 transition-transform text-center">
+                  className="text-2xl md:text-3xl p-1.5 rounded-xl hover:bg-white/10 active:scale-110 transition-transform text-center">
                   {e}
                 </button>
               ))}
             </div>
           )}
 
-          {/* GIF Grid */}
           {reactionTab === "gif" && (
-            <div className="grid grid-cols-4 gap-2 p-3 max-h-52 overflow-y-auto">
+            <div className="grid grid-cols-4 gap-2 p-3 max-h-64 overflow-y-auto">
               {GIFS.map(g => (
                 <button key={g.url} onClick={() => sendReaction("gif", g.url)}
                   className="relative rounded-xl overflow-hidden aspect-square bg-zinc-800 hover:ring-2 hover:ring-indigo-400 active:scale-95 transition-all">
                   <img src={g.url} alt={g.label} className="w-full h-full object-cover" loading="lazy" />
+                  <span className="absolute bottom-0.5 right-1 text-xs">{g.label}</span>
                 </button>
               ))}
             </div>
@@ -211,9 +237,8 @@ export default function Room() {
 
       {/* CONTROLS */}
       {!isImmersive && (
-        <div className="absolute bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 z-30 flex items-center justify-center gap-2 md:gap-3 bg-zinc-900/60 backdrop-blur-xl px-3 py-2 md:px-5 md:py-3 rounded-3xl border border-white/10 shadow-2xl overflow-x-auto max-w-[97vw]">
+        <div className="absolute bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 z-30 flex items-center justify-center gap-1.5 md:gap-3 bg-zinc-900/60 backdrop-blur-xl px-3 py-2 md:px-5 md:py-3 rounded-3xl border border-white/10 shadow-2xl max-w-[97vw] overflow-x-auto">
 
-          {/* Mute */}
           <button onClick={toggleMute} title={isMuted ? "Unmute" : "Mute"}
             className={`${btnBase} ${isMuted ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 border border-red-500/50" : "bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20"}`}>
             <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -222,7 +247,6 @@ export default function Room() {
             </svg>
           </button>
 
-          {/* Camera */}
           <button onClick={toggleVideo} title={isVideoOff ? "Camera On" : "Camera Off"}
             className={`${btnBase} ${isVideoOff ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 border border-red-500/50" : "bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20"}`}>
             <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -231,7 +255,6 @@ export default function Room() {
             </svg>
           </button>
 
-          {/* Screen Share */}
           <button onClick={shareScreen} title={isScreenSharing ? "Stop Sharing" : "Share Screen"}
             className={`${btnBase} ${isScreenSharing ? "bg-indigo-500 text-white hover:bg-indigo-600 shadow-indigo-500/30" : "bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20"}`}>
             <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -241,7 +264,6 @@ export default function Room() {
 
           <div className="w-px h-8 bg-white/10 mx-0.5" />
 
-          {/* Reaction Button */}
           <button onClick={() => setShowReactionPanel(v => !v)} title="Reactions / GIF"
             className={`${btnBase} ${showReactionPanel ? "bg-indigo-500 text-white" : "bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20"}`}>
             <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -249,7 +271,6 @@ export default function Room() {
             </svg>
           </button>
 
-          {/* Immersive */}
           <button onClick={() => setIsImmersive(true)} title="Cinema Mode" className={btnGhost}>
             <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -257,7 +278,6 @@ export default function Room() {
             </svg>
           </button>
 
-          {/* Fullscreen */}
           <button onClick={toggleFullscreen} title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"} className={btnGhost}>
             <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               {isFullscreen
@@ -269,7 +289,6 @@ export default function Room() {
 
           <div className="w-px h-8 bg-white/10 mx-0.5" />
 
-          {/* Leave */}
           <button onClick={() => { if (stream) stream.getTracks().forEach(t => { try { t.stop(); } catch {} }); router.push("/"); }}
             className={`${btnBase} bg-red-600 text-white hover:bg-red-700 border border-red-500 shadow-red-600/30`} title="Leave Room">
             <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ transform: "rotate(180deg)" }}>
@@ -280,7 +299,6 @@ export default function Room() {
         </div>
       )}
 
-      {/* IMMERSIVE HINT */}
       {isImmersive && (
         <div className="absolute top-8 left-1/2 -translate-x-1/2 bg-black/50 backdrop-blur-md text-white/70 px-4 py-2 rounded-full text-sm font-medium pointer-events-none animate-pulse">
           Ekrana dokun → UI göster

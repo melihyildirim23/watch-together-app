@@ -58,6 +58,7 @@ export const useWebRTC = (roomId: string) => {
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [peerConnected, setPeerConnected] = useState(false);
+  const [screenShareError, setScreenShareError] = useState<string | null>(null);
 
   const peerRef = useRef<PeerInstance | null>(null);
   const hasPeerStarted = useRef(false);
@@ -392,6 +393,21 @@ export const useWebRTC = (roomId: string) => {
       setIsScreenSharing(true);
     } catch (err) {
       console.warn("[WebRTC] Screen share cancelled or unsupported:", err);
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (err instanceof Error) {
+        if (err.name === 'NotAllowedError' || err.name === 'AbortError') {
+          // User cancelled — silent, no toast
+        } else if (isIOS) {
+          setScreenShareError("iOS Safari sadece sekme paylaşımını destekler. Tam ekran için Android Chrome veya masaüstü kullanın.");
+          setTimeout(() => setScreenShareError(null), 6000);
+        } else {
+          setScreenShareError("Ekran paylaşımı başlatılamadı. Tarayıcı izni verdiğinizden emin olun.");
+          setTimeout(() => setScreenShareError(null), 5000);
+        }
+      } else if (isIOS) {
+        setScreenShareError("iOS Safari sadece sekme paylaşımını destekler. Tam ekran için Android Chrome veya masaüstü kullanın.");
+        setTimeout(() => setScreenShareError(null), 6000);
+      }
       if (screenStreamRef.current) {
         screenStreamRef.current.getTracks().forEach(t => { try { t.stop(); } catch {} });
         screenStreamRef.current = null;
@@ -412,6 +428,7 @@ export const useWebRTC = (roomId: string) => {
     isVideoOff,
     isScreenSharing,
     peerConnected,
+    screenShareError,
   };
 };
 
