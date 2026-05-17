@@ -4,11 +4,6 @@ import { socket } from "@/lib/socket";
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-// simple-peer ships no first-party TypeScript declarations.
-// @types/simple-peer uses the `export =` CJS pattern which is tricky to
-// extract cleanly in Next.js 16's strict type-checker.
-// We define a minimal local interface covering every method we actually call.
-// This is the most robust approach and is 100% accurate for our usage.
 interface PeerInstance {
   signal(data: unknown): void;
   replaceTrack(oldTrack: MediaStreamTrack, newTrack: MediaStreamTrack, stream: MediaStream): void;
@@ -19,32 +14,18 @@ interface PeerInstance {
   readonly destroyed: boolean;
 }
 
-
 type SignalData = unknown;
 type OfferPayload = { roomId?: string; sdp: SignalData };
 type AnswerPayload = { sdp: SignalData };
 
-// STUN and TURN servers for strict NAT traversal (Cellular, Corporate networks)
 const ICE_SERVERS = {
   iceServers: [
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
     { urls: "stun:stun2.l.google.com:19302" },
-    {
-      urls: "turn:openrelay.metered.ca:80",
-      username: "openrelayproject",
-      credential: "openrelayproject"
-    },
-    {
-      urls: "turn:openrelay.metered.ca:443",
-      username: "openrelayproject",
-      credential: "openrelayproject"
-    },
-    {
-      urls: "turn:openrelay.metered.ca:443?transport=tcp",
-      username: "openrelayproject",
-      credential: "openrelayproject"
-    }
+    { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" },
+    { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
+    { urls: "turn:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" },
   ],
 };
 
@@ -64,23 +45,15 @@ export const useWebRTC = (roomId: string) => {
   const hasPeerStarted = useRef(false);
   const isPeerActive = useRef(false);
   const screenStreamRef = useRef<MediaStream | null>(null);
-  // Always reflects the latest stream value so cleanup can stop all tracks
   const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => { streamRef.current = stream; }, [stream]);
 
-  // ---------------------------------------------------------------------------
-  // safePeer — execute fn only when peer is alive
-  // ---------------------------------------------------------------------------
   const safePeer = useCallback(
     (actionName: string, fn: (peer: PeerInstance) => void): boolean => {
       if (peerRef.current && isPeerActive.current && !peerRef.current.destroyed) {
-        try {
-          fn(peerRef.current);
-          return true;
-        } catch (err) {
-          console.error(`[WebRTC] safePeer crashed in [${actionName}]:`, err);
-        }
+        try { fn(peerRef.current); return true; }
+        catch (err) { console.error(`[WebRTC] safePeer crashed in [${actionName}]:`, err); }
       } else {
         console.warn(`[WebRTC] safePeer blocked [${actionName}]: peer unavailable`);
       }
@@ -102,20 +75,14 @@ export const useWebRTC = (roomId: string) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const Peer = (await import("simple-peer")).default as any;
 
-        // 1. Acquire media FIRST (this takes time and user permission)
-        // Wrapped in try/catch so if the user denies camera, or has no webcam, they can STILL JOIN and WATCH.
         try {
-          localStream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: true,
-          });
+          localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
           console.log("[WebRTC] LOCAL STREAM READY");
         } catch (mediaErr) {
           console.warn("[WebRTC] Camera access denied or no device found. Joining as viewer only.", mediaErr);
           localStream = null;
         }
 
-        // StrictMode Unmount Guard
         if (!isMounted) {
           if (localStream) localStream.getTracks().forEach((t) => t.stop());
           return;
@@ -123,22 +90,16 @@ export const useWebRTC = (roomId: string) => {
 
         setStream(localStream);
 
-        // 2. Ensure Socket is fully connected
         if (!socket.connected) {
           socket.connect();
           await new Promise<void>((resolve) => {
-            const onConnect = () => {
-              console.log("[WebRTC] SOCKET CONNECTED");
-              socket.off("connect", onConnect);
-              resolve();
-            };
+            const onConnect = () => { console.log("[WebRTC] SOCKET CONNECTED"); socket.off("connect", onConnect); resolve(); };
             socket.on("connect", onConnect);
           });
         }
 
         if (!isMounted) return;
 
-        // 3. Attach listeners BEFORE emitting join-room
         socket.off("peer-ready");
         socket.off("offer");
         socket.off("answer");
@@ -146,7 +107,6 @@ export const useWebRTC = (roomId: string) => {
 
         socket.on("peer-ready", ({ initiatorId }: { initiatorId: string }) => {
           console.log("[WebRTC] PEER READY RECEIVED");
-
           if (peerRef.current) {
             console.warn("[WebRTC] Destroying existing stale peer instance...");
             try { if (!peerRef.current.destroyed) peerRef.current.destroy(); } catch (err) { }
@@ -155,8 +115,7 @@ export const useWebRTC = (roomId: string) => {
           hasPeerStarted.current = true;
 
           const isInitiator = socket.id === initiatorId;
-          console.log(`[WebRTC] INITIATOR TRUE/FALSE: ${isInitiator ? "TRUE" : "FALSE"}`);
-          console.log("[WebRTC] PEER CREATED");
+          console.log(`[WebRTC] INITIATOR: ${isInitiator ? "TRUE" : "FALSE"}`);
 
           const peer = new Peer({
             initiator: isInitiator,
@@ -170,9 +129,7 @@ export const useWebRTC = (roomId: string) => {
 
           peer.on("signal", (data: SignalData) => {
             if (isInitiator) {
-              console.log("[WebRTC] OFFER CREATED");
               socket.emit("offer", { roomId, sdp: data } as OfferPayload);
-              console.log("[WebRTC] OFFER SENT");
             } else {
               socket.emit("answer", { roomId, sdp: data } as AnswerPayload);
             }
@@ -184,48 +141,27 @@ export const useWebRTC = (roomId: string) => {
             setPeerConnected(true);
           });
 
-          // Handle dynamically added tracks (like screen system audio)
           peer.on("track", (track: MediaStreamTrack, remoteStream: MediaStream) => {
-            console.log(`[WebRTC] DYNAMIC TRACK ADDED: ${track.kind} (${track.label})`);
-            // Re-creating the MediaStream forces the <video> element to re-evaluate its tracks
+            console.log(`[WebRTC] DYNAMIC TRACK ADDED: ${track.kind}`);
             setRemoteStream(new MediaStream(remoteStream.getTracks()));
           });
 
-          peer.on("connect", () => {
-            console.log("[WebRTC] PEER CONNECTED");
-            setPeerConnected(true);
-          });
-
-          peer.on("close", () => {
-            isPeerActive.current = false;
-            setPeerConnected(false);
-          });
-
-          peer.on("error", (err: Error) => {
-            console.error("[WebRTC] Peer error:", err);
-          });
+          peer.on("connect", () => { console.log("[WebRTC] PEER CONNECTED"); setPeerConnected(true); });
+          peer.on("close", () => { isPeerActive.current = false; setPeerConnected(false); });
+          peer.on("error", (err: Error) => { console.error("[WebRTC] Peer error:", err); });
         });
 
         socket.on("offer", (data: OfferPayload) => {
-          safePeer("process offer", (p) => {
-            try { p.signal(data.sdp); } catch (err) { }
-          });
+          safePeer("process offer", (p) => { try { p.signal(data.sdp); } catch (err) { } });
         });
 
         socket.on("answer", (data: AnswerPayload) => {
           console.log("[WebRTC] ANSWER RECEIVED");
-          safePeer("process answer", (p) => {
-            try { p.signal(data.sdp); } catch (err) { }
-          });
+          safePeer("process answer", (p) => { try { p.signal(data.sdp); } catch (err) { } });
         });
 
-        socket.on("peer-disconnected", () => {
-          setRemoteStream(null);
-          setPeerConnected(false);
-        });
+        socket.on("peer-disconnected", () => { setRemoteStream(null); setPeerConnected(false); });
 
-        // 4. HANDSHAKE: Emit join-room ONLY when media is ready, socket is connected, and listeners are attached.
-        // This guarantees that if the server replies with peer-ready, we will never miss it.
         console.log("[WebRTC] JOIN REQUEST SENT");
         socket.emit("join-room", roomId);
 
@@ -236,45 +172,26 @@ export const useWebRTC = (roomId: string) => {
 
     init();
 
-    // ── Cleanup ──────────────────────────────────────────────────────────────
     return () => {
       isMounted = false;
       console.log("[WebRTC] Cleanup running...");
-
-      // 1. Detach socket listeners
       socket.off("peer-ready");
       socket.off("offer");
       socket.off("answer");
       socket.off("peer-disconnected");
-
-      // 2. Reset flags
       hasPeerStarted.current = false;
       isPeerActive.current = false;
       setPeerConnected(false);
-
-      // 3. Destroy peer
       if (peerRef.current) {
-        try {
-          if (!peerRef.current.destroyed) peerRef.current.destroy();
-        } catch (err) {
-          console.warn("[WebRTC] Peer destroy error:", err);
-        }
+        try { if (!peerRef.current.destroyed) peerRef.current.destroy(); } catch (err) { console.warn("[WebRTC] Peer destroy error:", err); }
         peerRef.current = null;
       }
-
-      // 4. Stop all local media tracks (use ref so we always have the latest stream)
       const activeStream = streamRef.current || localStream;
-      if (activeStream) {
-        activeStream.getTracks().forEach((t) => { try { t.stop(); } catch { } });
-      }
-
-      // 5. Stop dangling screen tracks
+      if (activeStream) activeStream.getTracks().forEach((t) => { try { t.stop(); } catch { } });
       if (screenStreamRef.current) {
         screenStreamRef.current.getTracks().forEach((t) => { try { t.stop(); } catch { } });
         screenStreamRef.current = null;
       }
-
-      // 6. Disconnect socket cleanly
       if (socket.connected) socket.disconnect();
     };
   }, [roomId, safePeer]);
@@ -285,27 +202,20 @@ export const useWebRTC = (roomId: string) => {
   const toggleMute = useCallback(() => {
     if (!stream) return;
     const track = stream.getAudioTracks()[0];
-    if (track) {
-      track.enabled = !track.enabled;
-      setIsMuted(!track.enabled);
-    }
+    if (track) { track.enabled = !track.enabled; setIsMuted(!track.enabled); }
   }, [stream]);
 
   const toggleVideo = useCallback(() => {
     if (!stream) return;
     const track = stream.getVideoTracks()[0];
-    if (track) {
-      track.enabled = !track.enabled;
-      setIsVideoOff(!track.enabled);
-    }
+    if (track) { track.enabled = !track.enabled; setIsVideoOff(!track.enabled); }
   }, [stream]);
 
   // ---------------------------------------------------------------------------
-  // stopScreenShare — restore camera stream, safe under all conditions
+  // stopScreenShare
   // ---------------------------------------------------------------------------
   const stopScreenShare = useCallback(async () => {
     if (!isScreenSharing) return;
-
     try {
       console.log("[WebRTC] stopScreenShare — acquiring camera...");
       const camStream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -314,30 +224,21 @@ export const useWebRTC = (roomId: string) => {
       if (stream) {
         const oldTrack = stream.getVideoTracks()[0];
         if (oldTrack) {
-          safePeer("revert screen→camera", (p) =>
-            p.replaceTrack(oldTrack, camTrack, stream),
-          );
+          safePeer("revert screen->camera", (p) => p.replaceTrack(oldTrack, camTrack, stream));
           oldTrack.stop();
         }
-
-        // Remove system audio track from peer if it exists
         const screenAudioTrack = screenStreamRef.current?.getAudioTracks()[0];
-        if (screenAudioTrack) {
-          safePeer("remove screen audio", (p) => p.removeTrack(screenAudioTrack, stream));
-        }
-
+        if (screenAudioTrack) safePeer("remove screen audio", (p) => p.removeTrack(screenAudioTrack, stream));
         const audioTracksToKeep = stream.getAudioTracks().filter(t => t !== screenAudioTrack);
         const next = new MediaStream([camTrack, ...audioTracksToKeep]);
         if (isVideoOff) camTrack.enabled = false;
         setStream(next);
       }
 
-      // Stop screen tracks
       if (screenStreamRef.current) {
         screenStreamRef.current.getTracks().forEach((t) => { try { t.stop(); } catch { } });
         screenStreamRef.current = null;
       }
-
       setIsScreenSharing(false);
     } catch (err) {
       console.error("[WebRTC] stopScreenShare error:", err);
@@ -347,28 +248,32 @@ export const useWebRTC = (roomId: string) => {
   }, [stream, isVideoOff, isScreenSharing, safePeer]);
 
   // ---------------------------------------------------------------------------
-  // shareScreen
+  // shareScreen — iOS uses minimal video:true (tab capture), others use full constraints
   // ---------------------------------------------------------------------------
   const shareScreen = useCallback(async () => {
-    if (isScreenSharing) {
-      await stopScreenShare();
-      return;
-    }
+    if (isScreenSharing) { await stopScreenShare(); return; }
 
     try {
       console.log("[WebRTC] Requesting display media...");
       let screenStream: MediaStream;
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
-      try {
-        screenStream = await navigator.mediaDevices.getDisplayMedia({
-          video: { width: { max: 1920 }, height: { max: 1080 }, frameRate: { max: 30 } },
-          audio: true,
-        });
-      } catch {
-        // Fallback: some mobile/safari versions reject audio:true
-        screenStream = await navigator.mediaDevices.getDisplayMedia({
-          video: { width: { max: 1920 }, height: { max: 1080 }, frameRate: { max: 30 } },
-        });
+      if (isIOS) {
+        // iOS Safari 16.4+: tab capture only. Complex constraints cause NotSupportedError.
+        console.log("[WebRTC] iOS detected — minimal constraints for tab capture");
+        screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      } else {
+        // Desktop / Android: full constraints with audio, fallback to no audio
+        try {
+          screenStream = await navigator.mediaDevices.getDisplayMedia({
+            video: { width: { max: 1920 }, height: { max: 1080 }, frameRate: { max: 30 } },
+            audio: true,
+          });
+        } catch {
+          screenStream = await navigator.mediaDevices.getDisplayMedia({
+            video: { width: { max: 1920 }, height: { max: 1080 }, frameRate: { max: 30 } },
+          });
+        }
       }
 
       screenStreamRef.current = screenStream;
@@ -382,7 +287,7 @@ export const useWebRTC = (roomId: string) => {
       }
 
       const oldTrack = stream.getVideoTracks()[0];
-      if (oldTrack) safePeer("camera→screen", (p) => p.replaceTrack(oldTrack, screenTrack, stream));
+      if (oldTrack) safePeer("camera->screen", (p) => p.replaceTrack(oldTrack, screenTrack, stream));
       if (screenAudioTrack) safePeer("add screen audio", (p) => p.addTrack(screenAudioTrack, stream));
 
       screenTrack.onended = () => { console.log("[WebRTC] Screen track ended"); stopScreenShare(); };
@@ -391,25 +296,26 @@ export const useWebRTC = (roomId: string) => {
       if (screenAudioTrack) tracksToAdd.push(screenAudioTrack);
       setStream(new MediaStream(tracksToAdd));
       setIsScreenSharing(true);
+
     } catch (err) {
       console.warn("[WebRTC] Screen share cancelled or unsupported:", err);
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       if (err instanceof Error) {
         if (err.name === 'NotAllowedError' || err.name === 'AbortError') {
-          // User cancelled — silent, no toast
-        } else if (isIOS) {
-          setScreenShareError("iOS Safari sadece sekme paylaşımını destekler. Tam ekran için Android Chrome veya masaüstü kullanın.");
-          setTimeout(() => setScreenShareError(null), 6000);
+          // User cancelled picker — silent
+        } else if (err.name === 'NotSupportedError') {
+          setScreenShareError("Ekran paylaşımı desteklenmiyor. iOS için Safari 16.4+ gerekli.");
+          setTimeout(() => setScreenShareError(null), 7000);
         } else {
-          setScreenShareError("Ekran paylaşımı başlatılamadı. Tarayıcı izni verdiğinizden emin olun.");
+          setScreenShareError("Ekran paylaşımı başlatılamadı: " + err.name);
           setTimeout(() => setScreenShareError(null), 5000);
         }
       } else if (isIOS) {
-        setScreenShareError("iOS Safari sadece sekme paylaşımını destekler. Tam ekran için Android Chrome veya masaüstü kullanın.");
-        setTimeout(() => setScreenShareError(null), 6000);
+        setScreenShareError("iOS için Safari 16.4+ kullanın ve sekme seçiciden sekme seçin.");
+        setTimeout(() => setScreenShareError(null), 7000);
       }
       if (screenStreamRef.current) {
-        screenStreamRef.current.getTracks().forEach(t => { try { t.stop(); } catch {} });
+        screenStreamRef.current.getTracks().forEach(t => { try { t.stop(); } catch { } });
         screenStreamRef.current = null;
       }
     }
@@ -431,4 +337,3 @@ export const useWebRTC = (roomId: string) => {
     screenShareError,
   };
 };
-

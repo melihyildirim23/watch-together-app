@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useWebRTC } from "@/hooks/useWebRTC";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { socket } from "@/lib/socket";
+import VideoPlayer from "@/components/VideoPlayer";
 
 type ReactionItem = { id: number; type: "emoji" | "gif"; content: string };
 
@@ -68,6 +69,7 @@ export default function Room() {
   const [reactionTab, setReactionTab] = useState<"emoji" | "gif">("emoji");
   const [activeReactions, setActiveReactions] = useState<ReactionItem[]>([]);
   const reactionIdCounter = useRef(0);
+  const [showVideoPlayer, setShowVideoPlayer] = useState(false);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     setIsDragging(true);
@@ -197,6 +199,11 @@ export default function Room() {
         </div>
       )}
 
+      {/* IN-APP VIDEO PLAYER */}
+      {showVideoPlayer && (
+        <VideoPlayer roomId={roomId} onClose={() => setShowVideoPlayer(false)} />
+      )}
+
       {/* REACTION PANEL */}
       {showReactionPanel && (
         <div className="absolute bottom-24 md:bottom-28 left-1/2 -translate-x-1/2 z-40 bg-zinc-900/95 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl overflow-hidden w-[94vw] sm:w-[420px]">
@@ -263,6 +270,14 @@ export default function Room() {
           </button>
 
           <div className="w-px h-8 bg-white/10 mx-0.5" />
+
+          <button onClick={() => setShowVideoPlayer(v => !v)} title="Video Oynat / YouTube"
+            className={`${btnBase} ${showVideoPlayer ? "bg-purple-500 text-white" : "bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20"}`}>
+            <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </button>
 
           <button onClick={() => setShowReactionPanel(v => !v)} title="Reactions / GIF"
             className={`${btnBase} ${showReactionPanel ? "bg-indigo-500 text-white" : "bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20"}`}>

@@ -118,6 +118,14 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("reaction", rest);
   });
 
+  socket.on("video-url", ({ roomId, url }) => {
+    socket.to(roomId).emit("video-url", { url });
+  });
+
+  socket.on("video-sync", ({ roomId, action, currentTime }) => {
+    socket.to(roomId).emit("video-sync", { action, currentTime });
+  });
+
   // ── DISCONNECT ────────────────────────────────────────────────────────────
   socket.on("disconnect", (reason) => {
     console.log(`[Server] Disconnected ${socket.id}  reason=${reason}`);
