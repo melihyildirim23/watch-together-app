@@ -18,16 +18,31 @@ interface PeerInstance {
 }
 
 
-type SignalData   = unknown;
+type SignalData = unknown;
 type OfferPayload = { roomId?: string; sdp: SignalData };
 type AnswerPayload = { sdp: SignalData };
 
-// STUN servers for NAT traversal — required in production
+// STUN and TURN servers for strict NAT traversal (Cellular, Corporate networks)
 const ICE_SERVERS = {
   iceServers: [
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
     { urls: "stun:stun2.l.google.com:19302" },
+    {
+      urls: "turn:openrelay.metered.ca:80",
+      username: "openrelayproject",
+      credential: "openrelayproject"
+    },
+    {
+      urls: "turn:openrelay.metered.ca:443",
+      username: "openrelayproject",
+      credential: "openrelayproject"
+    },
+    {
+      urls: "turn:openrelay.metered.ca:443?transport=tcp",
+      username: "openrelayproject",
+      credential: "openrelayproject"
+    }
   ],
 };
 
@@ -35,19 +50,19 @@ const ICE_SERVERS = {
 // Hook
 // ---------------------------------------------------------------------------
 export const useWebRTC = (roomId: string) => {
-  const [stream,          setStream]          = useState<MediaStream | null>(null);
-  const [remoteStream,    setRemoteStream]    = useState<MediaStream | null>(null);
-  const [isMuted,         setIsMuted]         = useState(false);
-  const [isVideoOff,      setIsVideoOff]      = useState(false);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isVideoOff, setIsVideoOff] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
-  const [peerConnected,   setPeerConnected]   = useState(false);
+  const [peerConnected, setPeerConnected] = useState(false);
 
-  const peerRef        = useRef<PeerInstance | null>(null);
+  const peerRef = useRef<PeerInstance | null>(null);
   const hasPeerStarted = useRef(false);
-  const isPeerActive   = useRef(false);
+  const isPeerActive = useRef(false);
   const screenStreamRef = useRef<MediaStream | null>(null);
   // Always reflects the latest stream value so cleanup can stop all tracks
-  const streamRef      = useRef<MediaStream | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => { streamRef.current = stream; }, [stream]);
 
@@ -85,17 +100,24 @@ export const useWebRTC = (roomId: string) => {
         const Peer = (await import("simple-peer")).default as any;
 
         // 1. Acquire media FIRST (this takes time and user permission)
-        localStream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
-        });
+        // Wrapped in try/catch so if the user denies camera, or has no webcam, they can STILL JOIN and WATCH.
+        try {
+          localStream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true,
+          });
+          console.log("[WebRTC] LOCAL STREAM READY");
+        } catch (mediaErr) {
+          console.warn("[WebRTC] Camera access denied or no device found. Joining as viewer only.", mediaErr);
+          localStream = null;
+        }
 
         // StrictMode Unmount Guard
         if (!isMounted) {
-          localStream.getTracks().forEach((t) => t.stop());
+          if (localStream) localStream.getTracks().forEach((t) => t.stop());
           return;
         }
-        console.log("[WebRTC] LOCAL STREAM READY");
+        
         setStream(localStream);
 
         // 2. Ensure Socket is fully connected
@@ -110,7 +132,7 @@ export const useWebRTC = (roomId: string) => {
             socket.on("connect", onConnect);
           });
         }
-        
+
         if (!isMounted) return;
 
         // 3. Attach listeners BEFORE emitting join-room
@@ -121,10 +143,10 @@ export const useWebRTC = (roomId: string) => {
 
         socket.on("peer-ready", ({ initiatorId }: { initiatorId: string }) => {
           console.log("[WebRTC] PEER READY RECEIVED");
-          
+
           if (peerRef.current) {
             console.warn("[WebRTC] Destroying existing stale peer instance...");
-            try { if (!peerRef.current.destroyed) peerRef.current.destroy(); } catch (err) {}
+            try { if (!peerRef.current.destroyed) peerRef.current.destroy(); } catch (err) { }
             peerRef.current = null;
           }
           hasPeerStarted.current = true;
@@ -135,13 +157,13 @@ export const useWebRTC = (roomId: string) => {
 
           const peer = new Peer({
             initiator: isInitiator,
-            trickle:   true,
-            stream:    streamRef.current || localStream!,
-            config:    ICE_SERVERS,
+            trickle: true,
+            ...(streamRef.current || localStream ? { stream: streamRef.current || localStream } : {}),
+            config: ICE_SERVERS,
           });
 
           isPeerActive.current = true;
-          peerRef.current      = peer;
+          peerRef.current = peer;
 
           peer.on("signal", (data: SignalData) => {
             if (isInitiator) {
@@ -175,14 +197,14 @@ export const useWebRTC = (roomId: string) => {
 
         socket.on("offer", (data: OfferPayload) => {
           safePeer("process offer", (p) => {
-            try { p.signal(data.sdp); } catch (err) {}
+            try { p.signal(data.sdp); } catch (err) { }
           });
         });
 
         socket.on("answer", (data: AnswerPayload) => {
           console.log("[WebRTC] ANSWER RECEIVED");
           safePeer("process answer", (p) => {
-            try { p.signal(data.sdp); } catch (err) {}
+            try { p.signal(data.sdp); } catch (err) { }
           });
         });
 
@@ -216,7 +238,7 @@ export const useWebRTC = (roomId: string) => {
 
       // 2. Reset flags
       hasPeerStarted.current = false;
-      isPeerActive.current   = false;
+      isPeerActive.current = false;
       setPeerConnected(false);
 
       // 3. Destroy peer
@@ -232,12 +254,12 @@ export const useWebRTC = (roomId: string) => {
       // 4. Stop all local media tracks (use ref so we always have the latest stream)
       const activeStream = streamRef.current || localStream;
       if (activeStream) {
-        activeStream.getTracks().forEach((t) => { try { t.stop(); } catch {} });
+        activeStream.getTracks().forEach((t) => { try { t.stop(); } catch { } });
       }
 
       // 5. Stop dangling screen tracks
       if (screenStreamRef.current) {
-        screenStreamRef.current.getTracks().forEach((t) => { try { t.stop(); } catch {} });
+        screenStreamRef.current.getTracks().forEach((t) => { try { t.stop(); } catch { } });
         screenStreamRef.current = null;
       }
 
@@ -276,7 +298,7 @@ export const useWebRTC = (roomId: string) => {
     try {
       console.log("[WebRTC] stopScreenShare — acquiring camera...");
       const camStream = await navigator.mediaDevices.getUserMedia({ video: true });
-      const camTrack  = camStream.getVideoTracks()[0];
+      const camTrack = camStream.getVideoTracks()[0];
 
       if (stream) {
         const oldTrack = stream.getVideoTracks()[0];
@@ -293,7 +315,7 @@ export const useWebRTC = (roomId: string) => {
 
       // Stop screen tracks
       if (screenStreamRef.current) {
-        screenStreamRef.current.getTracks().forEach((t) => { try { t.stop(); } catch {} });
+        screenStreamRef.current.getTracks().forEach((t) => { try { t.stop(); } catch { } });
         screenStreamRef.current = null;
       }
 
@@ -347,7 +369,7 @@ export const useWebRTC = (roomId: string) => {
       // User cancelled the picker — silent cleanup
       console.warn("[WebRTC] Screen share aborted:", err);
       if (screenStreamRef.current) {
-        screenStreamRef.current.getTracks().forEach((t) => { try { t.stop(); } catch {} });
+        screenStreamRef.current.getTracks().forEach((t) => { try { t.stop(); } catch { } });
         screenStreamRef.current = null;
       }
     }
@@ -368,4 +390,4 @@ export const useWebRTC = (roomId: string) => {
     peerConnected,
   };
 };
-
+
