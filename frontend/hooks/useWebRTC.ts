@@ -178,8 +178,16 @@ export const useWebRTC = (roomId: string) => {
           });
 
           peer.on("stream", (remote: MediaStream) => {
+            console.log("[WebRTC] REMOTE STREAM RECEIVED");
             setRemoteStream(remote);
             setPeerConnected(true);
+          });
+
+          // Handle dynamically added tracks (like screen system audio)
+          peer.on("track", (track: MediaStreamTrack, remoteStream: MediaStream) => {
+            console.log(`[WebRTC] DYNAMIC TRACK ADDED: ${track.kind} (${track.label})`);
+            // Re-creating the MediaStream forces the <video> element to re-evaluate its tracks
+            setRemoteStream(new MediaStream(remoteStream.getTracks()));
           });
 
           peer.on("connect", () => {
@@ -310,7 +318,7 @@ export const useWebRTC = (roomId: string) => {
           );
           oldTrack.stop();
         }
-        
+
         // Remove system audio track from peer if it exists
         const screenAudioTrack = screenStreamRef.current?.getAudioTracks()[0];
         if (screenAudioTrack) {
@@ -348,7 +356,7 @@ export const useWebRTC = (roomId: string) => {
 
     try {
       console.log("[WebRTC] Requesting display media with audio...");
-      const screenStream = await navigator.mediaDevices.getDisplayMedia({ 
+      const screenStream = await navigator.mediaDevices.getDisplayMedia({
         video: true,
         audio: true // Prompt user to share system/tab audio
       });
@@ -368,7 +376,7 @@ export const useWebRTC = (roomId: string) => {
       if (oldTrack) {
         safePeer("camera→screen", (p) => p.replaceTrack(oldTrack, screenTrack, stream));
       }
-      
+
       // If user agreed to share system audio, add it to the peer connection!
       if (screenAudioTrack) {
         safePeer("add screen audio", (p) => p.addTrack(screenAudioTrack, stream));
