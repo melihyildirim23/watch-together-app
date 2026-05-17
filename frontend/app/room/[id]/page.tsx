@@ -182,8 +182,8 @@ export default function Room() {
           style={{ 
             width: '160px', 
             height: '110px',
-            left: position.x === 20 && position.y === 20 ? 'auto' : \`\${position.x}px\`, 
-            top: position.x === 20 && position.y === 20 ? 'auto' : \`\${position.y}px\`,
+            left: position.x === 20 && position.y === 20 ? 'auto' : `${position.x}px`, 
+            top: position.x === 20 && position.y === 20 ? 'auto' : `${position.y}px`,
             right: position.x === 20 && position.y === 20 ? '16px' : 'auto',
             bottom: position.x === 20 && position.y === 20 ? '100px' : 'auto',
             touchAction: 'none'
@@ -198,7 +198,7 @@ export default function Room() {
               autoPlay
               playsInline
               muted
-              className={\`w-full h-full object-cover \${isVideoOff ? 'opacity-0' : 'opacity-100'}\`}
+              className={`w-full h-full object-cover ${isVideoOff ? 'opacity-0' : 'opacity-100'}`}
               style={{ transform: isScreenSharing ? 'none' : 'scaleX(-1)' }}
             />
           ) : null}
@@ -234,11 +234,11 @@ export default function Room() {
           
           <button
             onClick={toggleMute}
-            className={\`flex-shrink-0 p-3 md:p-4 rounded-full transition-all duration-300 shadow-lg flex items-center justify-center \${
+            className={`flex-shrink-0 p-3 md:p-4 rounded-full transition-all duration-300 shadow-lg flex items-center justify-center ${
               isMuted 
                 ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 border border-red-500/50" 
                 : "bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20"
-            }\`}
+            }`}
             title={isMuted ? "Unmute" : "Mute"}
           >
             {isMuted ? (
@@ -255,11 +255,11 @@ export default function Room() {
 
           <button
             onClick={toggleVideo}
-            className={\`flex-shrink-0 p-3 md:p-4 rounded-full transition-all duration-300 shadow-lg flex items-center justify-center \${
+            className={`flex-shrink-0 p-3 md:p-4 rounded-full transition-all duration-300 shadow-lg flex items-center justify-center ${
               isVideoOff 
                 ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 border border-red-500/50" 
                 : "bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20"
-            }\`}
+            }`}
             title={isVideoOff ? "Turn on camera" : "Turn off camera"}
           >
             {isVideoOff ? (
@@ -276,11 +276,11 @@ export default function Room() {
 
           <button
             onClick={shareScreen}
-            className={\`flex-shrink-0 p-3 md:p-4 rounded-full transition-all duration-300 shadow-lg flex items-center justify-center \${
+            className={`flex-shrink-0 p-3 md:p-4 rounded-full transition-all duration-300 shadow-lg flex items-center justify-center ${
               isScreenSharing 
                 ? "bg-indigo-500 text-white hover:bg-indigo-600 shadow-indigo-500/30" 
                 : "bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20"
-            }\`}
+            }`}
             title={isScreenSharing ? "Stop sharing" : "Share screen"}
           >
             <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
