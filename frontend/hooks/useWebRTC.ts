@@ -354,33 +354,19 @@ export const useWebRTC = (roomId: string) => {
       return;
     }
 
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-      alert("Cihazınız veya tarayıcınız ekran paylaşımını desteklemiyor (Örn: iOS Safari'de sınırlamalar olabilir).");
-      return;
-    }
-
     try {
-      console.log("[WebRTC] Requesting display media with audio...");
+      console.log("[WebRTC] Requesting display media...");
       let screenStream: MediaStream;
-      
+
       try {
         screenStream = await navigator.mediaDevices.getDisplayMedia({
-          video: {
-            width: { max: 1920 },
-            height: { max: 1080 },
-            frameRate: { max: 30 }
-          },
-          audio: true // Prompt user to share system/tab audio
+          video: { width: { max: 1920 }, height: { max: 1080 }, frameRate: { max: 30 } },
+          audio: true,
         });
-      } catch (audioErr) {
-        console.warn("[WebRTC] Failed with audio, trying without audio...", audioErr);
-        // Fallback for mobile/safari that might reject audio:true for display media
+      } catch {
+        // Fallback: some mobile/safari versions reject audio:true
         screenStream = await navigator.mediaDevices.getDisplayMedia({
-          video: {
-            width: { max: 1920 },
-            height: { max: 1080 },
-            frameRate: { max: 30 }
-          }
+          video: { width: { max: 1920 }, height: { max: 1080 }, frameRate: { max: 30 } },
         });
       }
 
@@ -395,37 +381,19 @@ export const useWebRTC = (roomId: string) => {
       }
 
       const oldTrack = stream.getVideoTracks()[0];
+      if (oldTrack) safePeer("camera→screen", (p) => p.replaceTrack(oldTrack, screenTrack, stream));
+      if (screenAudioTrack) safePeer("add screen audio", (p) => p.addTrack(screenAudioTrack, stream));
 
-      // Attempt track replacement — if peer is active, update it dynamically.
-      if (oldTrack) {
-        safePeer("camera→screen", (p) => p.replaceTrack(oldTrack, screenTrack, stream));
-      }
-
-      // If user agreed to share system audio, add it to the peer connection!
-      if (screenAudioTrack) {
-        safePeer("add screen audio", (p) => p.addTrack(screenAudioTrack, stream));
-      }
-
-      // Restore camera when user clicks browser "Stop sharing"
-      screenTrack.onended = () => {
-        console.log("[WebRTC] Screen track ended natively");
-        stopScreenShare();
-      };
+      screenTrack.onended = () => { console.log("[WebRTC] Screen track ended"); stopScreenShare(); };
 
       const tracksToAdd = [screenTrack, ...stream.getAudioTracks()];
       if (screenAudioTrack) tracksToAdd.push(screenAudioTrack);
-
-      const next = new MediaStream(tracksToAdd);
-      setStream(next);
+      setStream(new MediaStream(tracksToAdd));
       setIsScreenSharing(true);
     } catch (err) {
-      // User cancelled the picker or it failed entirely
-      console.warn("[WebRTC] Screen share aborted or failed:", err);
-      if (err instanceof Error && err.name !== 'NotAllowedError') {
-         alert("Ekran paylaşımı başlatılamadı: " + err.message);
-      }
+      console.warn("[WebRTC] Screen share cancelled or unsupported:", err);
       if (screenStreamRef.current) {
-        screenStreamRef.current.getTracks().forEach((t) => { try { t.stop(); } catch { } });
+        screenStreamRef.current.getTracks().forEach(t => { try { t.stop(); } catch {} });
         screenStreamRef.current = null;
       }
     }
