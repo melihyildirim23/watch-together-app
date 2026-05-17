@@ -113,6 +113,10 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("ice-candidate", { candidate });
   });
 
+  socket.on("reaction", ({ roomId, reaction }) => {
+    socket.to(roomId).emit("reaction", { reaction });
+  });
+
   // ── DISCONNECT ────────────────────────────────────────────────────────────
   socket.on("disconnect", (reason) => {
     console.log(`[Server] Disconnected ${socket.id}  reason=${reason}`);

@@ -357,7 +357,11 @@ export const useWebRTC = (roomId: string) => {
     try {
       console.log("[WebRTC] Requesting display media with audio...");
       const screenStream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
+        video: {
+          width: { max: 1920 },
+          height: { max: 1080 },
+          frameRate: { max: 30 }
+        },
         audio: true // Prompt user to share system/tab audio
       });
       screenStreamRef.current = screenStream;
