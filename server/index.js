@@ -113,8 +113,9 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("ice-candidate", { candidate });
   });
 
-  socket.on("reaction", ({ roomId, reaction }) => {
-    socket.to(roomId).emit("reaction", { reaction });
+  socket.on("reaction", (payload) => {
+    const { roomId, ...rest } = payload;
+    socket.to(roomId).emit("reaction", rest);
   });
 
   // ── DISCONNECT ────────────────────────────────────────────────────────────
