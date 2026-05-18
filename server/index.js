@@ -235,7 +235,8 @@ app.post("/api/hyperbeam-session", async (req, res) => {
         region: "EU", // Route to European servers (e.g. Frankfurt) for minimal ping and latency in Turkey!
         quality: {
           mode: "smooth" // Optimize video stream compression specifically for smooth movie/video playback
-        }
+        },
+        tag: roomId // Use roomId as a tag so Hyperbeam reuses the active VM if it exists, preventing rate limits!
       })
     });
 

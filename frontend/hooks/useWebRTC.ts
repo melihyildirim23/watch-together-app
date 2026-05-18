@@ -362,7 +362,7 @@ export const useWebRTC = (roomId: string) => {
         if (tabAudio) safePeer("remove tab audio", (p) => p.removeTrack(tabAudio, stream));
         setStream(new MediaStream([camTrack, ...stream.getAudioTracks().filter(t => t !== tabAudio)]));
       }
-      tabShareRef.current?.getTracks().forEach(t => { try { t.stop(); } catch {} });
+      tabShareRef.current?.getTracks().forEach(t => { try { t.stop(); } catch { } });
       tabShareRef.current = null;
     } catch {
       // ignore
