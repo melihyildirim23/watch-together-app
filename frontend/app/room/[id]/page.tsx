@@ -175,9 +175,9 @@ export default function Room() {
   const reactionIdCounter = useRef(0);
   
   // Synchronized Real-Time Co-Browsing States
-  const [browserUrl, setBrowserUrl] = useState("https://html.duckduckgo.com");
-  const [inputUrl, setInputUrl] = useState("https://html.duckduckgo.com");
-  const [historyStack, setHistoryStack] = useState<string[]>(["https://html.duckduckgo.com"]);
+  const [browserUrl, setBrowserUrl] = useState("https://yandex.com.tr");
+  const [inputUrl, setInputUrl] = useState("https://yandex.com.tr");
+  const [historyStack, setHistoryStack] = useState<string[]>(["https://yandex.com.tr"]);
   const [historyIndex, setHistoryIndex] = useState(0);
 
   // Sync address bar input whenever actual URL changes
@@ -194,7 +194,7 @@ export default function Room() {
       if (url.includes(".") && !url.includes(" ")) {
         url = "https://" + url;
       } else {
-        url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(url)}`;
+        url = `https://yandex.com.tr/search/?text=${encodeURIComponent(url)}`;
       }
     }
 
@@ -469,7 +469,7 @@ export default function Room() {
           </div>
 
           <button
-            onClick={() => navigateBrowser("https://html.duckduckgo.com")}
+            onClick={() => navigateBrowser("https://yandex.com.tr")}
             className="text-xs text-indigo-400 hover:text-white bg-indigo-500/10 hover:bg-indigo-500 border border-indigo-500/30 px-3 py-2 rounded-xl transition-all font-semibold"
           >
             Ana Sayfa
