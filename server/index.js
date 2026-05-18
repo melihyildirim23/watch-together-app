@@ -257,6 +257,7 @@ app.get("/api/proxy", async (req, res) => {
     }
 
     // Server-Side URL Rewriter: Intercept links, forms, and inner iframes before they reach the user
+    const absoluteProxyBase = `${req.protocol}://${req.get("host")}/api/proxy`;
     let rewrittenHtml = cleanedHtml;
 
     // 1. Rewrite <a href="..."> links
@@ -264,7 +265,7 @@ app.get("/api/proxy", async (req, res) => {
       if (!link || link.startsWith("#") || link.startsWith("javascript:") || link.startsWith("mailto:") || link.startsWith("tel:")) return match;
       try {
         const absoluteUrl = new URL(link, targetUrl).href;
-        return `${prefix}/api/proxy?url=${encodeURIComponent(absoluteUrl)}${suffix}`;
+        return `${prefix}${absoluteProxyBase}?url=${encodeURIComponent(absoluteUrl)}${suffix}`;
       } catch (e) {
         return match;
       }
@@ -274,7 +275,7 @@ app.get("/api/proxy", async (req, res) => {
     rewrittenHtml = rewrittenHtml.replace(/(<form\s+[^>]*action=["'])([^"']*)(["'])/gi, (match, prefix, link, suffix) => {
       try {
         const absoluteUrl = new URL(link || "", targetUrl).href;
-        return `${prefix}/api/proxy?url=${encodeURIComponent(absoluteUrl)}${suffix}`;
+        return `${prefix}${absoluteProxyBase}?url=${encodeURIComponent(absoluteUrl)}${suffix}`;
       } catch (e) {
         return match;
       }
@@ -285,7 +286,7 @@ app.get("/api/proxy", async (req, res) => {
       if (!link || link.startsWith("javascript:")) return match;
       try {
         const absoluteUrl = new URL(link, targetUrl).href;
-        return `${prefix}/api/proxy?url=${encodeURIComponent(absoluteUrl)}${suffix}`;
+        return `${prefix}${absoluteProxyBase}?url=${encodeURIComponent(absoluteUrl)}${suffix}`;
       } catch (e) {
         return match;
       }

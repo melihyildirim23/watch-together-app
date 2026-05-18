@@ -272,13 +272,25 @@ export default function Room() {
     }
   }, [remoteStream]);
 
+  // Helper to extract the pure original URL from absolute proxy URLs
+  const cleanProxyUrl = useCallback((url: string): string => {
+    try {
+      const urlObj = new URL(url);
+      const proxiedUrl = urlObj.searchParams.get("url");
+      if (proxiedUrl) {
+        return proxiedUrl;
+      }
+    } catch (e) {}
+    return url;
+  }, []);
+
   // Listen to postMessages from inside the proxy iframe (scroll, click, form submit, video play/pause)
   useEffect(() => {
     const handleIframeMessage = (e: MessageEvent) => {
       if (!e.data || typeof e.data !== "object") return;
 
       if (e.data.type === "iframe-navigate") {
-        const targetUrl = e.data.url;
+        const targetUrl = cleanProxyUrl(e.data.url);
         console.log("[In-App Browser] Intercepted navigation:", targetUrl);
         setBrowserUrl(targetUrl);
 
@@ -305,7 +317,7 @@ export default function Room() {
     return () => {
       window.removeEventListener("message", handleIframeMessage);
     };
-  }, [roomId, historyStack, historyIndex]);
+  }, [roomId, historyStack, historyIndex, cleanProxyUrl]);
 
   // Listen to remote Socket co-browsing events
   useEffect(() => {
