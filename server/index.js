@@ -214,6 +214,19 @@ app.get("/api/proxy", async (req, res) => {
     targetUrl = "https://" + targetUrl;
   }
 
+  // Reconstruct query string by appending all other incoming query parameters to the target URL
+  try {
+    const urlObj = new URL(targetUrl);
+    Object.keys(req.query).forEach(key => {
+      if (key !== "url") {
+        urlObj.searchParams.set(key, req.query[key]);
+      }
+    });
+    targetUrl = urlObj.href;
+  } catch (e) {
+    console.error("[Web Proxy] Failed to parse target url for query reconstruction:", e);
+  }
+
   try {
     console.log(`[Web Proxy] Loading target: ${targetUrl}`);
     const response = await fetch(targetUrl, {
@@ -243,49 +256,57 @@ app.get("/api/proxy", async (req, res) => {
       cleanedHtml = baseTag + cleanedHtml;
     }
 
+    // Server-Side URL Rewriter: Intercept links, forms, and inner iframes before they reach the user
+    let rewrittenHtml = cleanedHtml;
+
+    // 1. Rewrite <a href="..."> links
+    rewrittenHtml = rewrittenHtml.replace(/(<a\s+[^>]*href=["'])([^"']*)(["'])/gi, (match, prefix, link, suffix) => {
+      if (!link || link.startsWith("#") || link.startsWith("javascript:") || link.startsWith("mailto:") || link.startsWith("tel:")) return match;
+      try {
+        const absoluteUrl = new URL(link, targetUrl).href;
+        return `${prefix}/api/proxy?url=${encodeURIComponent(absoluteUrl)}${suffix}`;
+      } catch (e) {
+        return match;
+      }
+    });
+
+    // 2. Rewrite <form action="..."> submissions
+    rewrittenHtml = rewrittenHtml.replace(/(<form\s+[^>]*action=["'])([^"']*)(["'])/gi, (match, prefix, link, suffix) => {
+      try {
+        const absoluteUrl = new URL(link || "", targetUrl).href;
+        return `${prefix}/api/proxy?url=${encodeURIComponent(absoluteUrl)}${suffix}`;
+      } catch (e) {
+        return match;
+      }
+    });
+
+    // 3. Rewrite <iframe src="..."> embedded video players/links to ensure they are also fully proxied
+    rewrittenHtml = rewrittenHtml.replace(/(<iframe\s+[^>]*src=["'])([^"']*)(["'])/gi, (match, prefix, link, suffix) => {
+      if (!link || link.startsWith("javascript:")) return match;
+      try {
+        const absoluteUrl = new URL(link, targetUrl).href;
+        return `${prefix}/api/proxy?url=${encodeURIComponent(absoluteUrl)}${suffix}`;
+      } catch (e) {
+        return match;
+      }
+    });
+
     // Injected navigation, scrolling, and HTML5 video synchronization script
     const syncScript = `
       <script>
         (function() {
           console.log("[Co-Browsing Proxy] Injected synchronization scripts.");
 
-          // Helper to get absolute URLs
-          function getAbsoluteUrl(href) {
-            try {
-              return new URL(href, window.location.href).href;
-            } catch(e) {
-              return href;
+          // Intercept window.open popups to redirect inside our frame
+          window.open = function(url) {
+            if (url) {
+              try {
+                var absolute = new URL(url, window.location.href).href;
+                window.parent.postMessage({ type: 'iframe-navigate', url: absolute }, '*');
+              } catch(e) {}
             }
-          }
-
-          // Intercept all link clicks (keep navigation in proxy)
-          document.addEventListener('click', function(e) {
-            var link = e.target.closest('a');
-            if (link && link.href) {
-              e.preventDefault();
-              var absolute = getAbsoluteUrl(link.getAttribute('href') || link.href);
-              window.parent.postMessage({ type: 'iframe-navigate', url: absolute }, '*');
-            }
-          }, true);
-
-          // Intercept form submissions (e.g. Google Search form submission)
-          document.addEventListener('submit', function(e) {
-            var form = e.target;
-            e.preventDefault();
-            
-            var action = getAbsoluteUrl(form.getAttribute('action') || form.action || window.location.href);
-            var url = new URL(action);
-            
-            var formData = new FormData(form);
-            var params = new URLSearchParams();
-            for (var pair of formData.entries()) {
-              params.append(pair[0], pair[1]);
-            }
-            
-            var separator = url.search ? '&' : '?';
-            var targetUrl = url.protocol + '//' + url.host + url.pathname + url.search + separator + params.toString();
-            window.parent.postMessage({ type: 'iframe-navigate', url: targetUrl }, '*');
-          }, true);
+            return null;
+          };
 
           // Sync Scroll events
           var isSyncingScroll = false;
@@ -352,7 +373,7 @@ app.get("/api/proxy", async (req, res) => {
       </script>
     `;
 
-    let finalHtml = cleanedHtml;
+    let finalHtml = rewrittenHtml;
     if (finalHtml.includes("</body>")) {
       finalHtml = finalHtml.replace("</body>", `${syncScript}</body>`);
     } else {

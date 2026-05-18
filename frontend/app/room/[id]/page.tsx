@@ -175,9 +175,9 @@ export default function Room() {
   const reactionIdCounter = useRef(0);
   
   // Synchronized Real-Time Co-Browsing States
-  const [browserUrl, setBrowserUrl] = useState("https://www.google.com");
-  const [inputUrl, setInputUrl] = useState("https://www.google.com");
-  const [historyStack, setHistoryStack] = useState<string[]>(["https://www.google.com"]);
+  const [browserUrl, setBrowserUrl] = useState("https://html.duckduckgo.com");
+  const [inputUrl, setInputUrl] = useState("https://html.duckduckgo.com");
+  const [historyStack, setHistoryStack] = useState<string[]>(["https://html.duckduckgo.com"]);
   const [historyIndex, setHistoryIndex] = useState(0);
 
   // Sync address bar input whenever actual URL changes
@@ -194,7 +194,7 @@ export default function Room() {
       if (url.includes(".") && !url.includes(" ")) {
         url = "https://" + url;
       } else {
-        url = `https://www.google.com/search?q=${encodeURIComponent(url)}`;
+        url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(url)}`;
       }
     }
 
