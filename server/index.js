@@ -202,6 +202,61 @@ app.get("/api/search", async (req, res) => {
   }
 });
 
+// Internal Native Home Page for WatchTogether
+app.get("/api/home", (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="tr">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>WatchTogether Arama</title>
+        <style>
+          body { background: #0c0c0e; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
+          .container { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 600px; padding: 20px; text-align: center; }
+          .logo { font-size: 2.5rem; font-weight: 800; margin-bottom: 2rem; background: linear-gradient(135deg, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -1px; }
+          .search-box { display: flex; align-items: center; background: #18181b; padding: 0.5rem 0.5rem 0.5rem 1.5rem; border-radius: 999px; width: 100%; box-shadow: 0 4px 20px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05); transition: border-color 0.3s; }
+          .search-box:focus-within { border-color: rgba(99, 102, 241, 0.5); }
+          .search-box input { flex: 1; background: transparent; border: none; color: #f4f4f5; font-size: 1.1rem; outline: none; padding: 0.5rem 0; width: 100%; }
+          .search-box input::placeholder { color: #52525b; }
+          .search-box button { background: #6366f1; color: #fff; border: none; padding: 0.75rem 2rem; border-radius: 999px; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.2s; margin-left: 10px; }
+          .search-box button:hover { background: #4f46e5; transform: scale(1.02); }
+          .footer { margin-top: 3rem; color: #52525b; font-size: 0.85rem; font-weight: 500; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="logo">WatchTogether</div>
+          <form class="search-box" action="#" id="searchForm">
+            <input type="text" id="searchInput" placeholder="Yandex'te arayın veya site URL'si girin..." autocomplete="off" required>
+            <button type="submit">Ara</button>
+          </form>
+          <div class="footer">Eşzamanlı Co-Browsing Arayüzü &bull; Yandex Altyapısı</div>
+        </div>
+        <script>
+          document.getElementById('searchForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) return;
+            
+            let url = query;
+            if (!/^https?:\\/\\//i.test(url)) {
+              if (url.includes('.') && !url.includes(' ')) {
+                url = 'https://' + url;
+              } else {
+                url = 'https://yandex.com.tr/search/?text=' + encodeURIComponent(url);
+              }
+            }
+            
+            // Send exact target URL to parent React app
+            window.parent.postMessage({ type: 'iframe-navigate', url: url }, '*');
+          });
+        </script>
+      </body>
+    </html>
+  `);
+});
+
 // Real-Time Web Proxy for Interactive Co-Browsing
 app.get("/api/proxy", async (req, res) => {
   let targetUrl = req.query.url;

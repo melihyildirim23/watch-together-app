@@ -175,14 +175,15 @@ export default function Room() {
   const reactionIdCounter = useRef(0);
   
   // Synchronized Real-Time Co-Browsing States
-  const [browserUrl, setBrowserUrl] = useState("https://yandex.com.tr");
-  const [inputUrl, setInputUrl] = useState("https://yandex.com.tr");
-  const [historyStack, setHistoryStack] = useState<string[]>(["https://yandex.com.tr"]);
+  const [browserUrl, setBrowserUrl] = useState("internal://home");
+  const [inputUrl, setInputUrl] = useState("internal://home");
+  const [historyStack, setHistoryStack] = useState<string[]>(["internal://home"]);
   const [historyIndex, setHistoryIndex] = useState(0);
 
   // Sync address bar input whenever actual URL changes
   useEffect(() => {
-    setInputUrl(browserUrl);
+    // Hide 'internal://home' in the address bar for a cleaner look
+    setInputUrl(browserUrl === "internal://home" ? "" : browserUrl);
   }, [browserUrl]);
 
   // Synchronized Navigation function
@@ -190,7 +191,7 @@ export default function Room() {
     let url = target.trim();
     if (!url) return;
 
-    if (!/^https?:\/\//i.test(url)) {
+    if (url !== "internal://home" && !/^https?:\/\//i.test(url)) {
       if (url.includes(".") && !url.includes(" ")) {
         url = "https://" + url;
       } else {
@@ -469,7 +470,7 @@ export default function Room() {
           </div>
 
           <button
-            onClick={() => navigateBrowser("https://yandex.com.tr")}
+            onClick={() => navigateBrowser("internal://home")}
             className="text-xs text-indigo-400 hover:text-white bg-indigo-500/10 hover:bg-indigo-500 border border-indigo-500/30 px-3 py-2 rounded-xl transition-all font-semibold"
           >
             Ana Sayfa
@@ -480,7 +481,7 @@ export default function Room() {
         <div className="flex-1 w-full h-full relative overflow-hidden bg-[#0c0c0e]">
           <iframe
             id="browser-iframe"
-            src={`${SOCKET_URL}/api/proxy?url=${encodeURIComponent(browserUrl)}`}
+            src={browserUrl === "internal://home" ? `${SOCKET_URL}/api/home` : `${SOCKET_URL}/api/proxy?url=${encodeURIComponent(browserUrl)}`}
             className="w-full h-full border-none"
             sandbox="allow-same-origin allow-scripts allow-forms"
           />
