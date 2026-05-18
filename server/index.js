@@ -231,7 +231,11 @@ app.post("/api/hyperbeam-session", async (req, res) => {
       },
       body: JSON.stringify({
         start_url: "https://www.google.com",
-        ublock: true // Automatically block ads for a clean movie viewing experience!
+        ublock: true, // Automatically block ads for a clean movie viewing experience!
+        region: "EU", // Route to European servers (e.g. Frankfurt) for minimal ping and latency in Turkey!
+        quality: {
+          mode: "smooth" // Optimize video stream compression specifically for smooth movie/video playback
+        }
       })
     });
 
