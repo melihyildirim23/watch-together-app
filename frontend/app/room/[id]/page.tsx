@@ -10,15 +10,15 @@ type ReactionItem = { id: number; type: "emoji" | "gif"; content: string };
 
 const QUICK_EMOJIS = [
   // Faces / Smiles (30)
-  "😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋","😛","😝","😜","🤪","🤨","🧐","🤓","😎","🥸",
+  "­şİÇ","­şİâ","­şİä","­şİü","­şİå","­şİà","­şİé","­şñú","­şİè","­şİç","­şÖé","­şÖâ","­şİë","­şİî","­şİı","­şÑ░","­şİİ","­şİù","­şİÖ","­şİÜ","­şİï","­şİø","­şİØ","­şİ£","­şñ¬","­şñ¿","­şğÉ","­şñô","­şİÄ","­şÑ©",
   // Hand Gestures (30)
-  "👍","👎","👊","✊","🤛","🤜","🤞","✌️","🤟","🤘","👌","🤌","🤏","👈","👉","👆","👇","☝️","✋","🤚","👋","🤙","💪","👏","🙌","👐","🤲","🤝","🙏","✍️",
+  "­şæı","­şæÄ","­şæè","Ô£è","­şñø","­şñ£","­şñŞ","Ô£î´©Å","­şñş","­şñİ","­şæî","­şñî","­şñÅ","­şæê","­şæë","­şæå","­şæç","ÔİØ´©Å","Ô£ï","­şñÜ","­şæï","­şñÖ","­şÆ¬","­şæÅ","­şÖî","­şæÉ","­şñ▓","­şñØ","­şÖÅ","Ô£ı´©Å",
   // Hearts & Love (20)
-  "❤️","🧡","💛","💚","💙","💜","🖤","🤍","🤎","💔","❤️‍🔥","❤️‍🩹","❣️","💕","💞","💓","💗","💖","💘","💝",
+  "ÔØñ´©Å","­şğí","­şÆø","­şÆÜ","­şÆÖ","­şÆ£","­şûñ","­şñı","­şñÄ","­şÆö","ÔØñ´©ÅÔÇı­şöÑ","ÔØñ´©ÅÔÇı­ş®╣","ÔØú´©Å","­şÆò","­şÆŞ","­şÆô","­şÆù","­şÆû","­şÆİ","­şÆØ",
   // Party & Celebration (15)
-  "🎉","🎊","🥳","🎈","🎂","🎁","🎇","🎆","🧨","✨","🌟","⭐️","⚡️","💥","🔥",
+  "­şÄë","­şÄè","­şÑ│","­şÄê","­şÄé","­şÄü","­şÄç","­şÄå","­şğ¿","Ô£¿","­şîş","Ô¡É´©Å","ÔÜí´©Å","­şÆÑ","­şöÑ",
   // Expressions / Random (25)
-  "😱","😭","😮","🥱","😴","🤔","😤","😡","🤬","🤯","🫠","💀","👽","🤖","🎃","😺","👻","👹","💯","🎯","🚀","👀","💤","🤑","🎮"
+  "­şİ▒","­şİ¡","­şİ«","­şÑ▒","­şİ┤","­şñö","­şİñ","­şİí","­şñ¼","­şñ»","­ş½á","­şÆÇ","­şæ¢","­şñû","­şÄâ","­şİ║","­şæ╗","­şæ╣","­şÆ»","­şÄ»","­şÜÇ","­şæÇ","­şÆñ","­şñæ","­şÄ«"
 ];
 
 const GIFS = [
@@ -153,7 +153,7 @@ export default function Room() {
   const router = useRouter();
   const roomId = params.id as string;
 
-  const { stream, remoteStream, toggleMute, toggleVideo, shareScreen, isMuted, isVideoOff, isScreenSharing, peerConnected, screenShareError } = useWebRTC(roomId);
+  const { stream, remoteStream, toggleMute, toggleVideo, shareScreen, shareBrowserTab, isMuted, isVideoOff, isScreenSharing, isTabSharing, peerConnected, screenShareError } = useWebRTC(roomId);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -410,43 +410,85 @@ export default function Room() {
         .reaction-pop { animation: popInFadeOut 3.5s forwards; position:absolute; left:50%; top:50%; }
       `}} />
 
-      {/* REAL-TIME NATIVE WEBRTC MAIN STAGE */}
-      <div className={`relative flex flex-col w-full h-full border border-white/5 shadow-2xl overflow-hidden bg-black z-0 ${isImmersive ? "" : "md:rounded-[32px] md:m-4"}`}>
+      {/* REAL-TIME CO-BROWSING INTERACTIVE BROWSER */}
+      <div className="absolute inset-0 w-full h-full bg-[#0a0a0c] flex flex-col z-0">
         
-        {/* Main Remote Video Stream (Screen Share or Camera) */}
-        {remoteStream ? (
-          <video
-            ref={remoteVideoRef}
-            autoPlay
-            playsInline
-            className="w-full h-full object-contain bg-[#0a0a0c]"
-            // Remote video audio is active so they can hear the shared movie!
-          />
-        ) : stream ? (
-          <video
-            ref={localVideoRef}
-            autoPlay
-            playsInline
-            muted // Local is muted to prevent echo
-            className="w-full h-full object-contain opacity-50 bg-[#0a0a0c]"
-            style={{ transform: "scaleX(-1)" }}
-          />
-        ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center text-white/30 animate-pulse bg-[#0a0a0c]">
-            <svg className="w-20 h-20 mb-6 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-            <p className="font-medium text-lg tracking-wide text-center px-4">Kameranız veya ekranınız bekleniyor...</p>
+        {/* Sleek Browser Navigation Top Bar */}
+        <div className="w-full bg-[#121215]/90 border-b border-white/5 px-4 py-2.5 flex items-center gap-3 shadow-xl z-20 backdrop-blur-md mt-14 md:mt-0">
+          
+          {/* Mac-like decorative colored circles */}
+          <div className="flex gap-1.5 pr-1.5 hidden md:flex">
+            <span className="w-3 h-3 rounded-full bg-red-500/80" />
+            <span className="w-3 h-3 rounded-full bg-yellow-500/80" />
+            <span className="w-3 h-3 rounded-full bg-green-500/80" />
           </div>
-        )}
 
-        {/* Connection Status Indicator */}
-        {!peerConnected && (
-           <div className="absolute top-4 right-4 bg-black/60 px-4 py-2 rounded-full border border-yellow-500/30 text-yellow-400 text-sm font-semibold backdrop-blur-md flex items-center gap-2 z-10 shadow-lg">
-             <span className="w-2.5 h-2.5 rounded-full bg-yellow-500 animate-ping" />
-             Arkadaşınız bekleniyor...
-           </div>
-        )}
+          {/* Navigation Control Buttons */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleBack}
+              disabled={historyIndex === 0}
+              className="p-2 rounded-xl hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent text-white/80 transition-all font-bold text-sm"
+              title="Geri"
+            >
+              ÔùÇ
+            </button>
+            <button
+              onClick={handleForward}
+              disabled={historyIndex === historyStack.length - 1}
+              className="p-2 rounded-xl hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent text-white/80 transition-all font-bold text-sm"
+              title="─░leri"
+            >
+              ÔûÂ
+            </button>
+            <button
+              onClick={() => {
+                const iframe = document.getElementById("browser-iframe") as HTMLIFrameElement;
+                if (iframe) iframe.src = iframe.src;
+              }}
+              className="p-2 rounded-xl hover:bg-white/10 text-white/80 transition-all text-sm"
+              title="Yenile"
+            >
+              ­şöä
+            </button>
+          </div>
+
+          {/* Elegant Address bar input */}
+          <div className="flex-1 bg-black/40 border border-white/5 rounded-2xl px-4 py-2 flex items-center gap-2.5 text-xs text-white/40 shadow-inner">
+            <span className="text-indigo-400 text-xs font-semibold select-none flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+              Payla┼ş─▒ml─▒ Ekran
+            </span>
+            <span className="text-white/10 select-none">|</span>
+            <input
+              value={inputUrl}
+              onChange={e => setInputUrl(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && navigateBrowser(inputUrl)}
+              className="flex-1 bg-transparent text-white/90 outline-none placeholder:text-white/30 text-xs md:text-sm font-medium"
+              placeholder="Film arat─▒n veya direkt film/makale linki yap─▒┼şt─▒r─▒n..."
+            />
+          </div>
+
+          <button
+            onClick={() => navigateBrowser("https://www.google.com/webhp?igu=1")}
+            className="text-xs text-indigo-400 hover:text-white bg-indigo-500/10 hover:bg-indigo-500 border border-indigo-500/30 px-3 py-2 rounded-xl transition-all font-semibold"
+          >
+            Ana Sayfa
+          </button>
+        </div>
+
+        <div className="flex-1 w-full h-full relative overflow-hidden bg-[#0c0c0e]">
+          <iframe
+            id="browser-iframe"
+            src={
+              browserUrl.includes("google.com") 
+                ? browserUrl 
+                : `${SOCKET_URL}/api/proxy?url=${encodeURIComponent(browserUrl)}`
+            }
+            className="w-full h-full border-none"
+            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+          />
+        </div>
       </div>
 
       {/* ACTIVE REACTIONS OVERLAY */}
@@ -464,7 +506,7 @@ export default function Room() {
       {/* SCREEN SHARE ERROR TOAST */}
       {screenShareError && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-red-900/90 text-white px-5 py-3 rounded-2xl text-sm border border-red-500/50 backdrop-blur-md max-w-xs text-center shadow-xl">
-          {screenShareError}
+          µÅÉÕıç {screenShareError}
         </div>
       )}
 
@@ -473,14 +515,13 @@ export default function Room() {
         <div className="absolute top-0 left-0 w-full p-4 md:p-6 bg-gradient-to-b from-black/80 to-transparent z-10 flex justify-between items-start pointer-events-none">
           <div className="flex flex-col gap-1">
             <h1 className="text-xl md:text-2xl font-bold tracking-tight drop-shadow-md">Watch<span className="text-indigo-500">Together</span></h1>
-            <span className="bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md border border-indigo-500/30 w-max">Oda: {roomId}</span>
+            <span className="bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md border border-indigo-500/30 w-max">Room: {roomId}</span>
           </div>
         </div>
       )}
 
       {/* FLOATING DRAGGABLE BUBBLE 1: LOCAL WEBCAM */}
-      {/* We only show the local webcam bubble if there is a remote stream taking up the main stage */}
-      {!isImmersive && stream && remoteStream && (
+      {!isImmersive && stream && (
         <div
           className={`absolute z-30 overflow-hidden rounded-2xl border border-white/10 shadow-2xl backdrop-blur-md bg-black/40 transition-shadow ${isDraggingLocal ? "cursor-grabbing scale-105" : "cursor-grab hover:border-white/30"}`}
           style={{ width: 160, height: 110, left: localPos.x, top: localPos.y, touchAction: "none" }}
@@ -508,6 +549,25 @@ export default function Room() {
         </div>
       )}
 
+      {/* FLOATING DRAGGABLE BUBBLE 2: REMOTE WEBCAM */}
+      {!isImmersive && remoteStream && (
+        <div
+          className={`absolute z-30 overflow-hidden rounded-2xl border border-white/10 shadow-2xl backdrop-blur-md bg-black/40 transition-shadow ${isDraggingRemote ? "cursor-grabbing scale-105" : "cursor-grab hover:border-white/30"}`}
+          style={{ width: 160, height: 110, left: remotePos.x, top: remotePos.y, touchAction: "none" }}
+          onPointerDown={handlePointerDownRemote} onPointerMove={handlePointerMoveRemote} onPointerUp={handlePointerUpRemote}
+        >
+          <video
+            ref={remoteVideoRef}
+            autoPlay
+            playsInline
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute bottom-1.5 left-2 pointer-events-none">
+            <span className="bg-black/60 px-1.5 py-0.5 rounded text-[10px] font-medium border border-white/10">Arkada┼ş─▒n─▒z</span>
+          </div>
+        </div>
+      )}
+
 
 
       {/* REACTION PANEL */}
@@ -517,10 +577,10 @@ export default function Room() {
             {(["emoji", "gif"] as const).map(tab => (
               <button key={tab} onClick={() => setReactionTab(tab)}
                 className={`flex-1 py-3 text-sm font-semibold uppercase tracking-wide transition-colors ${reactionTab === tab ? "text-indigo-400 border-b-2 border-indigo-400" : "text-white/40 hover:text-white/70"}`}>
-                {tab === "emoji" ? "😀 Emoji" : "🎥 GIF"}
+                {tab === "emoji" ? "­şİÇ Emoji" : "­şÄÑ GIF"}
               </button>
             ))}
-            <button onClick={() => setShowReactionPanel(false)} className="px-4 text-white/40 hover:text-white/80 text-xl leading-none pb-0.5">✕</button>
+            <button onClick={() => setShowReactionPanel(false)} className="px-4 text-white/40 hover:text-white/80 text-xl leading-none pb-0.5">Ô£ò</button>
           </div>
 
           {reactionTab === "emoji" && (
@@ -575,6 +635,24 @@ export default function Room() {
             </svg>
           </button>
 
+          {/* Tab Share: captures THIS tab's video AND audio — best for movie sync */}
+          <button
+            onClick={shareBrowserTab}
+            title={isTabSharing ? "Sekme Paylaşımını Durdur" : "Bu Sekmeyi Sesli Paylaş (Film izle)"}
+            className={`${btnBase} gap-1.5 px-3 text-sm font-semibold ${
+              isTabSharing
+                ? "bg-purple-600 text-white hover:bg-purple-700 border border-purple-400/50"
+                : "bg-purple-500/20 text-purple-300 hover:bg-purple-500/40 border border-purple-500/30"
+            }`}
+          >
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 8l2 2 4-4" />
+            </svg>
+            <span className="hidden md:inline whitespace-nowrap">{isTabSharing ? "⏹ Durdur" : "📺 Sekme+Ses"}</span>
+          </button>
+
+
 
 
           <button onClick={() => setShowReactionPanel(v => !v)} title="Reactions / GIF"
@@ -614,7 +692,7 @@ export default function Room() {
 
       {isImmersive && (
         <div className="absolute top-8 left-1/2 -translate-x-1/2 bg-black/50 backdrop-blur-md text-white/70 px-4 py-2 rounded-full text-sm font-medium pointer-events-none animate-pulse">
-          Ekrana dokun → UI göster
+          Ekrana dokun ÔåÆ UI g├Âster
         </div>
       )}
     </div>

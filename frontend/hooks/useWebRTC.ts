@@ -322,6 +322,98 @@ export const useWebRTC = (roomId: string) => {
   }, [isScreenSharing, stream, stopScreenShare, safePeer]);
 
   // ---------------------------------------------------------------------------
+  // shareBrowserTab — Captures THIS tab's video+audio with highest compatibility
+  // Chrome 94+: uses preferCurrentTab which pre-selects this tab with audio on
+  // ---------------------------------------------------------------------------
+  const [isTabSharing, setIsTabSharing] = useState(false);
+  const tabShareRef = useRef<MediaStream | null>(null);
+
+  const stopTabShare = useCallback(async () => {
+    if (!isTabSharing) return;
+    try {
+      const camStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const camTrack = camStream.getVideoTracks()[0];
+      if (stream) {
+        const oldTrack = stream.getVideoTracks()[0];
+        if (oldTrack) {
+          safePeer("revert tab->camera", (p) => p.replaceTrack(oldTrack, camTrack, stream));
+          oldTrack.stop();
+        }
+        const tabAudio = tabShareRef.current?.getAudioTracks()[0];
+        if (tabAudio) safePeer("remove tab audio", (p) => p.removeTrack(tabAudio, stream));
+        setStream(new MediaStream([camTrack, ...stream.getAudioTracks().filter(t => t !== tabAudio)]));
+      }
+      tabShareRef.current?.getTracks().forEach(t => { try { t.stop(); } catch {} });
+      tabShareRef.current = null;
+    } catch {
+      // ignore
+    } finally {
+      setIsTabSharing(false);
+    }
+  }, [isTabSharing, stream, safePeer]);
+
+  const shareBrowserTab = useCallback(async () => {
+    if (isTabSharing) { await stopTabShare(); return; }
+    setScreenShareError(null);
+
+    try {
+      // preferCurrentTab pre-selects this tab and enables audio in Chrome 94+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const constraints: any = {
+        video: { width: { max: 1920 }, height: { max: 1080 }, frameRate: { max: 30 } },
+        audio: {
+          suppressLocalAudioPlayback: false, // keep audio audible locally too
+        },
+        preferCurrentTab: true,   // Chrome hint: pre-select current tab
+        selfBrowserSurface: "include",
+      };
+
+      let tabStream: MediaStream;
+      try {
+        tabStream = await navigator.mediaDevices.getDisplayMedia(constraints);
+      } catch {
+        // fallback without preferCurrentTab for Firefox/Safari
+        tabStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+      }
+
+      tabShareRef.current = tabStream;
+      const tabVideoTrack = tabStream.getVideoTracks()[0];
+      const tabAudioTrack = tabStream.getAudioTracks()[0];
+
+      if (!stream) {
+        tabStream.getTracks().forEach(t => t.stop());
+        setScreenShareError("Kamera akışı bulunamadı. Lütfen önce kameranıza izin verin.");
+        setTimeout(() => setScreenShareError(null), 5000);
+        return;
+      }
+
+      const oldVideoTrack = stream.getVideoTracks()[0];
+      if (oldVideoTrack) {
+        safePeer("tab video replace", (p) => p.replaceTrack(oldVideoTrack, tabVideoTrack, stream));
+        oldVideoTrack.stop();
+      }
+      if (tabAudioTrack) {
+        safePeer("tab audio add", (p) => p.addTrack(tabAudioTrack, stream));
+      }
+
+      tabVideoTrack.onended = () => stopTabShare();
+
+      const updatedTracks = [tabVideoTrack, ...stream.getAudioTracks()];
+      if (tabAudioTrack) updatedTracks.push(tabAudioTrack);
+      setStream(new MediaStream(updatedTracks));
+      setIsTabSharing(true);
+
+    } catch (err) {
+      if (err instanceof Error && (err.name === "NotAllowedError" || err.name === "AbortError")) {
+        // user cancelled — silent
+      } else {
+        setScreenShareError("Sekme paylaşımı başlatılamadı. Chrome 94+ veya yeni bir Firefox kullanın.");
+        setTimeout(() => setScreenShareError(null), 6000);
+      }
+    }
+  }, [isTabSharing, stream, stopTabShare, safePeer]);
+
+  // ---------------------------------------------------------------------------
   // Return
   // ---------------------------------------------------------------------------
   return {
@@ -330,9 +422,11 @@ export const useWebRTC = (roomId: string) => {
     toggleMute,
     toggleVideo,
     shareScreen,
+    shareBrowserTab,
     isMuted,
     isVideoOff,
     isScreenSharing,
+    isTabSharing,
     peerConnected,
     screenShareError,
   };
