@@ -352,19 +352,27 @@ export const useWebRTC = (roomId: string) => {
     }
   }, [isTabSharing, stream, safePeer]);
 
+  const [showMobileGuide, setShowMobileGuide] = useState(false);
+
   const shareBrowserTab = useCallback(async () => {
     if (isTabSharing) { await stopTabShare(); return; }
     setScreenShareError(null);
+
+    // Mobile devices (Android/iOS) don't support getDisplayMedia.
+    // Show a native screen-recording guide instead of throwing an error.
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      setShowMobileGuide(true);
+      return;
+    }
 
     try {
       // preferCurrentTab pre-selects this tab and enables audio in Chrome 94+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const constraints: any = {
         video: { width: { max: 1920 }, height: { max: 1080 }, frameRate: { max: 30 } },
-        audio: {
-          suppressLocalAudioPlayback: false, // keep audio audible locally too
-        },
-        preferCurrentTab: true,   // Chrome hint: pre-select current tab
+        audio: { suppressLocalAudioPlayback: false },
+        preferCurrentTab: true,
         selfBrowserSurface: "include",
       };
 
@@ -429,5 +437,7 @@ export const useWebRTC = (roomId: string) => {
     isTabSharing,
     peerConnected,
     screenShareError,
+    showMobileGuide,
+    setShowMobileGuide,
   };
 };

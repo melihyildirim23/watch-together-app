@@ -153,7 +153,7 @@ export default function Room() {
   const router = useRouter();
   const roomId = params.id as string;
 
-  const { stream, remoteStream, toggleMute, toggleVideo, shareScreen, shareBrowserTab, isMuted, isVideoOff, isScreenSharing, isTabSharing, peerConnected, screenShareError } = useWebRTC(roomId);
+  const { stream, remoteStream, toggleMute, toggleVideo, shareScreen, shareBrowserTab, isMuted, isVideoOff, isScreenSharing, isTabSharing, peerConnected, screenShareError, showMobileGuide, setShowMobileGuide } = useWebRTC(roomId);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -692,7 +692,72 @@ export default function Room() {
 
       {isImmersive && (
         <div className="absolute top-8 left-1/2 -translate-x-1/2 bg-black/50 backdrop-blur-md text-white/70 px-4 py-2 rounded-full text-sm font-medium pointer-events-none animate-pulse">
-          Ekrana dokun ÔåÆ UI g├Âster
+          Tam ekrandan çıkmak için dokunun
+        </div>
+      )}
+
+      {/* MOBILE SCREEN SHARE GUIDE MODAL */}
+      {showMobileGuide && (
+        <div className="absolute inset-0 z-[100] flex items-end md:items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm bg-zinc-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-white font-bold text-lg">📱 Mobil Ekran Paylaşımı</h2>
+                <p className="text-white/70 text-xs mt-0.5">Android / iOS için adım adım rehber</p>
+              </div>
+              <button
+                onClick={() => setShowMobileGuide(false)}
+                className="text-white/60 hover:text-white text-2xl leading-none"
+              >✕</button>
+            </div>
+
+            {/* Steps */}
+            <div className="px-6 py-5 space-y-4">
+              <div className="flex gap-3 items-start">
+                <span className="w-7 h-7 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-400 text-sm font-bold flex-shrink-0 flex items-center justify-center">1</span>
+                <div>
+                  <p className="text-white text-sm font-semibold">Filmi arka planda aç</p>
+                  <p className="text-white/50 text-xs mt-0.5">Bu uygulamayı küçültüp telefonun tarayıcısında izlemek istediğin filmi/videoyu başlat.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 items-start">
+                <span className="w-7 h-7 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-400 text-sm font-bold flex-shrink-0 flex items-center justify-center">2</span>
+                <div>
+                  <p className="text-white text-sm font-semibold">Bildirim panelini aşağı çek</p>
+                  <p className="text-white/50 text-xs mt-0.5">Ekranın üstünden aşağı kaydırarak hızlı ayarlar panelini aç.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 items-start">
+                <span className="w-7 h-7 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-400 text-sm font-bold flex-shrink-0 flex items-center justify-center">3</span>
+                <div>
+                  <p className="text-white text-sm font-semibold">"Ekran Kaydı"na bas</p>
+                  <p className="text-white/50 text-xs mt-0.5">
+                    <span className="text-yellow-400 font-semibold">⚠️ Önemli:</span> Sesi de paylaşmak için mikrofon/ses ikonuna dokunarak <span className="text-green-400 font-semibold">"Sistem Sesi"ni aktif et.</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 items-start">
+                <span className="w-7 h-7 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-400 text-sm font-bold flex-shrink-0 flex items-center justify-center">4</span>
+                <div>
+                  <p className="text-white text-sm font-semibold">WatchTogether'a geri dön</p>
+                  <p className="text-white/50 text-xs mt-0.5">Kaydı başlattıktan sonra bu uygulamaya geri dön — arkadaşın seni otomatik izlemeye başlar!</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 pb-5">
+              <button
+                onClick={() => setShowMobileGuide(false)}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-2xl transition-colors text-sm"
+              >
+                Anladım, başlayacağım!
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
