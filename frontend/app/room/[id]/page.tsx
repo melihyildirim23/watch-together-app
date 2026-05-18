@@ -272,13 +272,20 @@ export default function Room() {
     }
   }, [remoteStream]);
 
-  // Helper to extract the pure original URL from absolute proxy URLs
+  // Helper to extract the pure original URL from absolute proxy URLs and preserve all appended query parameters
   const cleanProxyUrl = useCallback((url: string): string => {
     try {
       const urlObj = new URL(url);
       const proxiedUrl = urlObj.searchParams.get("url");
       if (proxiedUrl) {
-        return proxiedUrl;
+        const pureUrlObj = new URL(proxiedUrl);
+        // Append all extra parameters (like form submissions) that were attached to the proxy url
+        urlObj.searchParams.forEach((value, key) => {
+          if (key !== "url") {
+            pureUrlObj.searchParams.set(key, value);
+          }
+        });
+        return pureUrlObj.href;
       }
     } catch (e) {}
     return url;

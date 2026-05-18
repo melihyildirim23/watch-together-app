@@ -395,7 +395,8 @@ app.get("/api/proxy", async (req, res) => {
           <div style="text-align:center;padding:20px;">
             <h3 style="color:#ef4444;margin-bottom:8px;">Sayfa Yüklenemedi</h3>
             <p style="color:#a1a1aa;font-size:13px;margin-bottom:16px;">Girdiğiniz adres veya Google arama sayfası yüklenemedi.</p>
-            <p style="color:#52525b;font-size:11px;">URL: ${targetUrl}</p>
+            <p style="color:#52525b;font-size:11px;margin-bottom:8px;">URL: ${targetUrl}</p>
+            <p style="color:#ef4444;font-size:11px;font-family:monospace;background:#27272a;padding:8px;border-radius:4px;">Error: ${error.message || String(error)}</p>
           </div>
         </body>
       </html>
