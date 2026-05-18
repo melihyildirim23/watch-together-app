@@ -158,6 +158,10 @@ export default function Room() {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
+  // Hyperbeam SDK container and instance state
+  const hyperbeamContainerRef = useRef<HTMLDivElement>(null);
+  const [hyperbeamInstance, setHyperbeamInstance] = useState<any>(null);
+
   // Separate draggable coordinates for local and remote webcams (initially left side out of search area)
   const [localPos, setLocalPos] = useState({ x: 24, y: 100 });
   const [isDraggingLocal, setIsDraggingLocal] = useState(false);
@@ -407,6 +411,51 @@ export default function Room() {
     };
   }, [roomId]);
 
+  // Dynamically initialize Hyperbeam SDK on mount / state change
+  useEffect(() => {
+    if (!hyperbeamActive || !hyperbeamEmbedUrl || !hyperbeamContainerRef.current) {
+      if (hyperbeamInstance) {
+        try { hyperbeamInstance.destroy(); } catch {}
+        setHyperbeamInstance(null);
+      }
+      return;
+    }
+
+    let active = true;
+    let hb: any = null;
+
+    const initHyperbeam = async () => {
+      try {
+        const HyperbeamSDK = (await import("@hyperbeam/web")).default;
+        if (!active) return;
+
+        // Clear container first
+        if (hyperbeamContainerRef.current) {
+          hyperbeamContainerRef.current.innerHTML = "";
+        }
+
+        hb = await HyperbeamSDK(hyperbeamContainerRef.current!, hyperbeamEmbedUrl, {
+          delegateKeyboard: true, // forward keyboard input
+        });
+
+        if (active) {
+          setHyperbeamInstance(hb);
+        }
+      } catch (err) {
+        console.error("[Hyperbeam SDK] Init failed:", err);
+      }
+    };
+
+    initHyperbeam();
+
+    return () => {
+      active = false;
+      if (hb) {
+        try { hb.destroy(); } catch {}
+      }
+    };
+  }, [hyperbeamActive, hyperbeamEmbedUrl]);
+
   // Handler to start or stop Hyperbeam
   const handleHyperbeamClick = useCallback(async () => {
     if (hyperbeamActive) {
@@ -501,76 +550,128 @@ export default function Room() {
       {/* REAL-TIME CO-BROWSING INTERACTIVE BROWSER */}
       <div className="absolute inset-0 w-full h-full bg-[#0a0a0c] flex flex-col z-0">
         
-        {/* Sleek Browser Navigation Top Bar */}
-        <div className="w-full bg-[#121215]/90 border-b border-white/5 px-4 py-2.5 flex items-center gap-3 shadow-xl z-20 backdrop-blur-md mt-14 md:mt-0">
-          
-          {/* Mac-like decorative colored circles */}
-          <div className="flex gap-1.5 pr-1.5 hidden md:flex">
-            <span className="w-3 h-3 rounded-full bg-red-500/80" />
-            <span className="w-3 h-3 rounded-full bg-yellow-500/80" />
-            <span className="w-3 h-3 rounded-full bg-green-500/80" />
-          </div>
+        {/* Sleek Browser Navigation Top Bar / Hyperbeam Minimalism */}
+        {hyperbeamActive ? (
+          <div className="w-full bg-[#121215]/90 border-b border-white/5 px-4 py-2.5 flex items-center justify-between shadow-xl z-20 backdrop-blur-md mt-14 md:mt-0">
+            <div className="flex items-center gap-3">
+              <span className="flex h-3.5 w-3.5 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-rose-500"></span>
+              </span>
+              <span className="text-xs md:text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-rose-500 select-none">
+                ☁️ Bulut PC Aktif (Sıfır Donma, Harika Ses)
+              </span>
+            </div>
 
-          {/* Navigation Control Buttons */}
-          <div className="flex items-center gap-1">
+            {/* Robust Mobile/PC Keyboard Input helper */}
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                className="bg-black/50 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-pink-500 w-32 sm:w-48 md:w-64"
+                placeholder="⌨️ Mobil Klavye ile Yaz..."
+                onInput={(e: any) => {
+                  const val = e.target.value;
+                  if (val.length > 0) {
+                    const char = val.substring(val.length - 1);
+                    if (hyperbeamInstance) {
+                      hyperbeamInstance.sendEvent({ type: "keydown", key: char });
+                      hyperbeamInstance.sendEvent({ type: "keyup", key: char });
+                    }
+                    e.target.value = ""; // Keep cleared so they can type next char
+                  }
+                }}
+                onKeyDown={(e: any) => {
+                  if (e.key === "Enter") {
+                    if (hyperbeamInstance) {
+                      hyperbeamInstance.sendEvent({ type: "keydown", key: "Enter" });
+                      hyperbeamInstance.sendEvent({ type: "keyup", key: "Enter" });
+                    }
+                  } else if (e.key === "Backspace") {
+                    if (hyperbeamInstance) {
+                      hyperbeamInstance.sendEvent({ type: "keydown", key: "Backspace" });
+                      hyperbeamInstance.sendEvent({ type: "keyup", key: "Backspace" });
+                    }
+                  }
+                }}
+              />
+
+              <button
+                onClick={handleHyperbeamClick}
+                className="text-xs text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 border border-rose-500/30 px-3 py-2 rounded-xl transition-all font-semibold"
+              >
+                Bulut Kapat
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="w-full bg-[#121215]/90 border-b border-white/5 px-4 py-2.5 flex items-center gap-3 shadow-xl z-20 backdrop-blur-md mt-14 md:mt-0">
+            {/* Mac-like decorative colored circles */}
+            <div className="flex gap-1.5 pr-1.5 hidden md:flex">
+              <span className="w-3 h-3 rounded-full bg-red-500/80" />
+              <span className="w-3 h-3 rounded-full bg-yellow-500/80" />
+              <span className="w-3 h-3 rounded-full bg-green-500/80" />
+            </div>
+
+            {/* Navigation Control Buttons */}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handleBack}
+                disabled={historyIndex === 0}
+                className="p-2 rounded-xl hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent text-white/80 transition-all font-bold text-sm"
+                title="Geri"
+              >
+                ÔùÇ
+              </button>
+              <button
+                onClick={handleForward}
+                disabled={historyIndex === historyStack.length - 1}
+                className="p-2 rounded-xl hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent text-white/80 transition-all font-bold text-sm"
+                title="─░leri"
+              >
+                ÔûÂ
+              </button>
+              <button
+                onClick={() => {
+                  const iframe = document.getElementById("browser-iframe") as HTMLIFrameElement;
+                  if (iframe) iframe.src = iframe.src;
+                }}
+                className="p-2 rounded-xl hover:bg-white/10 text-white/80 transition-all text-sm"
+                title="Yenile"
+              >
+                ­şöä
+              </button>
+            </div>
+
+            {/* Elegant Address bar input */}
+            <div className="flex-1 bg-black/40 border border-white/5 rounded-2xl px-4 py-2 flex items-center gap-2.5 text-xs text-white/40 shadow-inner">
+              <span className="text-indigo-400 text-xs font-semibold select-none flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                Payla┼ş─▒ml─▒ Ekran
+              </span>
+              <span className="text-white/10 select-none">|</span>
+              <input
+                value={inputUrl}
+                onChange={e => setInputUrl(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && navigateBrowser(inputUrl)}
+                className="flex-1 bg-transparent text-white/90 outline-none placeholder:text-white/30 text-xs md:text-sm font-medium"
+                placeholder="Film arat─▒n veya direkt film/makale linki yap─▒┼şt─▒r─▒n..."
+              />
+            </div>
+
             <button
-              onClick={handleBack}
-              disabled={historyIndex === 0}
-              className="p-2 rounded-xl hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent text-white/80 transition-all font-bold text-sm"
-              title="Geri"
+              onClick={() => navigateBrowser("https://www.google.com/webhp?igu=1")}
+              className="text-xs text-indigo-400 hover:text-white bg-indigo-500/10 hover:bg-indigo-500 border border-indigo-500/30 px-3 py-2 rounded-xl transition-all font-semibold"
             >
-              ÔùÇ
-            </button>
-            <button
-              onClick={handleForward}
-              disabled={historyIndex === historyStack.length - 1}
-              className="p-2 rounded-xl hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent text-white/80 transition-all font-bold text-sm"
-              title="─░leri"
-            >
-              ÔûÂ
-            </button>
-            <button
-              onClick={() => {
-                const iframe = document.getElementById("browser-iframe") as HTMLIFrameElement;
-                if (iframe) iframe.src = iframe.src;
-              }}
-              className="p-2 rounded-xl hover:bg-white/10 text-white/80 transition-all text-sm"
-              title="Yenile"
-            >
-              ­şöä
+              Ana Sayfa
             </button>
           </div>
-
-          {/* Elegant Address bar input */}
-          <div className="flex-1 bg-black/40 border border-white/5 rounded-2xl px-4 py-2 flex items-center gap-2.5 text-xs text-white/40 shadow-inner">
-            <span className="text-indigo-400 text-xs font-semibold select-none flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-              Payla┼ş─▒ml─▒ Ekran
-            </span>
-            <span className="text-white/10 select-none">|</span>
-            <input
-              value={inputUrl}
-              onChange={e => setInputUrl(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && navigateBrowser(inputUrl)}
-              className="flex-1 bg-transparent text-white/90 outline-none placeholder:text-white/30 text-xs md:text-sm font-medium"
-              placeholder="Film arat─▒n veya direkt film/makale linki yap─▒┼şt─▒r─▒n..."
-            />
-          </div>
-
-          <button
-            onClick={() => navigateBrowser("https://www.google.com/webhp?igu=1")}
-            className="text-xs text-indigo-400 hover:text-white bg-indigo-500/10 hover:bg-indigo-500 border border-indigo-500/30 px-3 py-2 rounded-xl transition-all font-semibold"
-          >
-            Ana Sayfa
-          </button>
-        </div>
+        )}
 
         <div className="flex-1 w-full h-full relative overflow-hidden bg-[#0c0c0e]">
           {hyperbeamActive && hyperbeamEmbedUrl ? (
-            <iframe
-              src={hyperbeamEmbedUrl}
-              className="w-full h-full border-none bg-black"
-              allow="autoplay; camera; microphone; clipboard-read; clipboard-write;"
+            <div
+              ref={hyperbeamContainerRef}
+              className="w-full h-full bg-black relative"
             />
           ) : (
             <iframe

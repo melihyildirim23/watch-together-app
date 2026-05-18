@@ -103,6 +103,7 @@ export const useWebRTC = (roomId: string) => {
         socket.off("peer-ready");
         socket.off("offer");
         socket.off("answer");
+        socket.off("ice-candidate");
         socket.off("peer-disconnected");
 
         socket.on("peer-ready", ({ initiatorId }: { initiatorId: string }) => {
@@ -127,11 +128,18 @@ export const useWebRTC = (roomId: string) => {
           isPeerActive.current = true;
           peerRef.current = peer;
 
-          peer.on("signal", (data: SignalData) => {
-            if (isInitiator) {
-              socket.emit("offer", { roomId, sdp: data } as OfferPayload);
-            } else {
-              socket.emit("answer", { roomId, sdp: data } as AnswerPayload);
+          // Robust WebRTC signaling (separates SDP offers/answers from ICE candidates)
+          peer.on("signal", (data: any) => {
+            if (data.renegotiate || data.transceiverRequest) return;
+
+            if (data.type === "offer" || data.type === "answer") {
+              if (data.type === "offer") {
+                socket.emit("offer", { roomId, sdp: data });
+              } else {
+                socket.emit("answer", { roomId, sdp: data });
+              }
+            } else if (data.candidate) {
+              socket.emit("ice-candidate", { roomId, candidate: data });
             }
           });
 
@@ -160,6 +168,16 @@ export const useWebRTC = (roomId: string) => {
           safePeer("process answer", (p) => { try { p.signal(data.sdp); } catch (err) { } });
         });
 
+        socket.on("ice-candidate", ({ candidate }: { candidate: any }) => {
+          safePeer("process ice candidate", (p) => {
+            try {
+              p.signal(candidate);
+            } catch (err) {
+              console.warn("[WebRTC] Failed to signal candidate:", err);
+            }
+          });
+        });
+
         socket.on("peer-disconnected", () => { setRemoteStream(null); setPeerConnected(false); });
 
         console.log("[WebRTC] JOIN REQUEST SENT");
@@ -178,6 +196,7 @@ export const useWebRTC = (roomId: string) => {
       socket.off("peer-ready");
       socket.off("offer");
       socket.off("answer");
+      socket.off("ice-candidate");
       socket.off("peer-disconnected");
       hasPeerStarted.current = false;
       isPeerActive.current = false;
@@ -192,7 +211,7 @@ export const useWebRTC = (roomId: string) => {
         screenStreamRef.current.getTracks().forEach((t) => { try { t.stop(); } catch { } });
         screenStreamRef.current = null;
       }
-      if (socket.connected) socket.disconnect();
+      socket.emit("leave-room");
     };
   }, [roomId, safePeer]);
 

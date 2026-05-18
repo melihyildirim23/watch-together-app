@@ -672,6 +672,11 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("leave-room", () => {
+    console.log(`[Server] ${socket.id} explicitly left room`);
+    removeFromRooms(socket.id);
+  });
+
   // ── WEBRTC SIGNALING ──────────────────────────────────────────────────────
   socket.on("offer", ({ roomId, sdp }) => {
     console.log(`[Server] offer  ${socket.id} → ${roomId}`);
