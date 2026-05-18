@@ -160,9 +160,10 @@ export default function Room() {
 
   const { stream, remoteStream, toggleMute, toggleVideo, shareScreen, isMuted, isVideoOff, isScreenSharing, peerConnected, screenShareError } = useWebRTC(roomId);
 
-  const localVideoRef = useRef<HTMLVideoElement>(null);
-  const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const centerVideoRef = useRef<HTMLVideoElement>(null);
+  const bubbleVideoRef = useRef<HTMLVideoElement>(null);
 
+  const [isRemoteScreenSharing, setIsRemoteScreenSharing] = useState(false);
   const [position, setPosition] = useState({ x: 20, y: 20 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -187,8 +188,41 @@ export default function Room() {
     e.currentTarget.releasePointerCapture(e.pointerId);
   };
 
-  useEffect(() => { if (localVideoRef.current && stream) localVideoRef.current.srcObject = stream; }, [stream]);
-  useEffect(() => { if (remoteVideoRef.current && remoteStream) remoteVideoRef.current.srcObject = remoteStream; }, [remoteStream]);
+  // Dynamically route streams: Center gets screen sharing (local or remote), Bubble gets camera
+  useEffect(() => {
+    const centerVideo = centerVideoRef.current;
+    const bubbleVideo = bubbleVideoRef.current;
+
+    if (isScreenSharing) {
+      // You are sharing your screen
+      if (centerVideo) centerVideo.srcObject = stream;
+      if (bubbleVideo) bubbleVideo.srcObject = remoteStream;
+    } else if (isRemoteScreenSharing) {
+      // Remote peer is sharing their screen
+      if (centerVideo) centerVideo.srcObject = remoteStream;
+      if (bubbleVideo) bubbleVideo.srcObject = stream;
+    } else {
+      // Normal Mode
+      if (centerVideo) centerVideo.srcObject = remoteStream;
+      if (bubbleVideo) bubbleVideo.srcObject = stream;
+    }
+  }, [stream, remoteStream, isScreenSharing, isRemoteScreenSharing]);
+
+  // Synchronize screen share status to remote peer via socket
+  useEffect(() => {
+    socket.emit("screen-share-state", { roomId, active: isScreenSharing });
+  }, [roomId, isScreenSharing]);
+
+  // Listen to remote peer's screen share status
+  useEffect(() => {
+    const handleRemoteState = ({ active }: { active: boolean }) => {
+      setIsRemoteScreenSharing(active);
+    };
+    socket.on("screen-share-state", handleRemoteState);
+    return () => {
+      socket.off("screen-share-state", handleRemoteState);
+    };
+  }, []);
 
   const showReaction = useCallback((type: "emoji" | "gif", content: string) => {
     const id = reactionIdCounter.current++;
@@ -237,12 +271,24 @@ export default function Room() {
         .reaction-pop { animation: popInFadeOut 3.5s forwards; position:absolute; left:50%; top:50%; }
       `}} />
 
-      {/* REMOTE VIDEO */}
-      {remoteStream ? (
-        <video ref={remoteVideoRef} autoPlay playsInline
-          className="absolute inset-0 w-full h-full object-contain md:object-cover bg-black cursor-pointer"
-          onClick={() => { if (isImmersive) setIsImmersive(false); }}
-        />
+      {/* CENTER STREAM AREA (CAMERA OR SCREEN SHARE) */}
+      {(isScreenSharing || isRemoteScreenSharing || remoteStream) ? (
+        <div className="absolute inset-0 w-full h-full bg-black flex items-center justify-center z-0">
+          <video
+            ref={centerVideoRef}
+            autoPlay
+            playsInline
+            muted={isScreenSharing} // Mute local screen share to prevent feedback loops
+            className="w-full h-full object-contain md:object-cover cursor-pointer"
+            onClick={() => { if (isImmersive) setIsImmersive(false); }}
+          />
+          {(isScreenSharing || isRemoteScreenSharing) && (
+            <div className="absolute top-4 left-4 bg-indigo-600/90 text-white px-3.5 py-1.5 rounded-full text-xs font-semibold backdrop-blur-md shadow-lg border border-indigo-400/30 flex items-center gap-2 z-10">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+              <span>{isScreenSharing ? "Sizin Ekranınız Paylaşılıyor (Sekme)" : "Arkadaşınızın Ekranı Paylaşılıyor"}</span>
+            </div>
+          )}
+        </div>
       ) : (
         <div className="flex flex-col items-center justify-center z-0">
           <div className="w-24 h-24 mb-4 rounded-full border-4 border-indigo-500/30 border-t-indigo-500 animate-spin" />
@@ -280,24 +326,25 @@ export default function Room() {
         </div>
       )}
 
-      {/* LOCAL CAMERA */}
-      {!isImmersive && (
+      {/* FLOATING BUBBLE (YOUR CAMERA IN SCREEN SHARE, OR OPPONENT CAMERA IN NORMAL MODE) */}
+      {!isImmersive && (isScreenSharing ? remoteStream : stream) && (
         <div
           className={`absolute z-20 overflow-hidden rounded-2xl border border-white/10 shadow-2xl backdrop-blur-md bg-black/40 transition-shadow ${isDragging ? "cursor-grabbing scale-105" : "cursor-grab hover:border-white/30"}`}
           style={{ width: 160, height: 110, left: isDefaultPos ? "auto" : position.x, top: isDefaultPos ? "auto" : position.y, right: isDefaultPos ? 16 : "auto", bottom: isDefaultPos ? 100 : "auto", touchAction: "none" }}
           onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp}
         >
-          {stream && <video ref={localVideoRef} autoPlay playsInline muted className={`w-full h-full object-cover ${isVideoOff ? "opacity-0" : "opacity-100"}`} style={{ transform: isScreenSharing ? "none" : "scaleX(-1)" }} />}
-          {isVideoOff && (
-            <div className="absolute inset-0 flex items-center justify-center bg-zinc-800">
-              <svg className="w-8 h-8 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                <line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
-              </svg>
-            </div>
-          )}
+          <video
+            ref={bubbleVideoRef}
+            autoPlay
+            playsInline
+            muted={true}
+            className="w-full h-full object-cover"
+            style={{ transform: (isScreenSharing || isRemoteScreenSharing) ? "none" : "scaleX(-1)" }}
+          />
           <div className="absolute bottom-1.5 left-2 pointer-events-none">
-            <span className="bg-black/60 px-1.5 py-0.5 rounded text-[10px] font-medium border border-white/10">You {isScreenSharing ? "(Screen)" : ""}</span>
+            <span className="bg-black/60 px-1.5 py-0.5 rounded text-[10px] font-medium border border-white/10">
+              {isScreenSharing ? "Arkadaşınız" : "Siz"}
+            </span>
           </div>
         </div>
       )}

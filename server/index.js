@@ -251,6 +251,10 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("video-sync", { action, currentTime });
   });
 
+  socket.on("screen-share-state", ({ roomId, active }) => {
+    socket.to(roomId).emit("screen-share-state", { active });
+  });
+
   // ── DISCONNECT ────────────────────────────────────────────────────────────
   socket.on("disconnect", (reason) => {
     console.log(`[Server] Disconnected ${socket.id}  reason=${reason}`);
