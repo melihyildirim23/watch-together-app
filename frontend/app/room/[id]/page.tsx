@@ -180,6 +180,12 @@ export default function Room() {
   const [historyStack, setHistoryStack] = useState<string[]>(["https://www.google.com/webhp?igu=1"]);
   const [historyIndex, setHistoryIndex] = useState(0);
 
+  // Premium Cloud Virtual Browser (Hyperbeam) States
+  const [hyperbeamActive, setHyperbeamActive] = useState(false);
+  const [hyperbeamEmbedUrl, setHyperbeamEmbedUrl] = useState<string | null>(null);
+  const [showHyperbeamKeyModal, setShowHyperbeamKeyModal] = useState(false);
+  const [hyperbeamApiKey, setHyperbeamApiKey] = useState("");
+
   // Sync address bar input whenever actual URL changes
   useEffect(() => {
     // Hide the igu=1 parameter in the address bar for a cleaner look
@@ -364,6 +370,88 @@ export default function Room() {
     };
   }, [historyStack, historyIndex]);
 
+  // Premium Cloud Browser: Initial Check & Socket Sync
+  useEffect(() => {
+    // If we already have a saved key in localStorage, pre-fill it
+    const savedKey = localStorage.getItem("hyperbeam_api_key");
+    if (savedKey) setHyperbeamApiKey(savedKey);
+
+    // Initial check for an active room session
+    const checkActiveSession = async () => {
+      try {
+        const res = await fetch(`${SOCKET_URL}/api/hyperbeam-session`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ roomId })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.embedUrl) {
+            setHyperbeamEmbedUrl(data.embedUrl);
+            setHyperbeamActive(true);
+          }
+        }
+      } catch (e) {}
+    };
+    checkActiveSession();
+
+    // Socket listeners for Hyperbeam state changes
+    const handleHyperbeamState = ({ active, embedUrl }: { active: boolean; embedUrl?: string }) => {
+      setHyperbeamActive(active);
+      setHyperbeamEmbedUrl(embedUrl || null);
+    };
+
+    socket.on("hyperbeam-state", handleHyperbeamState);
+    return () => {
+      socket.off("hyperbeam-state", handleHyperbeamState);
+    };
+  }, [roomId]);
+
+  // Handler to start or stop Hyperbeam
+  const handleHyperbeamClick = useCallback(async () => {
+    if (hyperbeamActive) {
+      if (confirm("Sanal bulut bilgisayarını sonlandırmak istiyor musunuz?")) {
+        setHyperbeamActive(false);
+        setHyperbeamEmbedUrl(null);
+        socket.emit("hyperbeam-state", { roomId, active: false });
+      }
+      return;
+    }
+
+    const savedKey = localStorage.getItem("hyperbeam_api_key");
+    if (savedKey) {
+      startHyperbeamSession(savedKey);
+    } else {
+      setShowHyperbeamKeyModal(true);
+    }
+  }, [hyperbeamActive, roomId]);
+
+  const startHyperbeamSession = async (key: string) => {
+    try {
+      const res = await fetch(`${SOCKET_URL}/api/hyperbeam-session`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-hyperbeam-key": key
+        },
+        body: JSON.stringify({ roomId })
+      });
+
+      if (!res.ok) {
+        throw new Error(await res.text());
+      }
+
+      const data = await res.json();
+      setHyperbeamEmbedUrl(data.embedUrl);
+      setHyperbeamActive(true);
+      socket.emit("hyperbeam-state", { roomId, active: true, embedUrl: data.embedUrl });
+      localStorage.setItem("hyperbeam_api_key", key);
+      setShowHyperbeamKeyModal(false);
+    } catch (e: any) {
+      alert("Sanal bilgisayar başlatılamadı: " + e.message);
+    }
+  };
+
   const showReaction = useCallback((type: "emoji" | "gif", content: string) => {
     const id = reactionIdCounter.current++;
     setActiveReactions(prev => [...prev, { id, type, content }]);
@@ -478,16 +566,24 @@ export default function Room() {
         </div>
 
         <div className="flex-1 w-full h-full relative overflow-hidden bg-[#0c0c0e]">
-          <iframe
-            id="browser-iframe"
-            src={
-              browserUrl.includes("google.com") 
-                ? browserUrl 
-                : `${SOCKET_URL}/api/proxy?url=${encodeURIComponent(browserUrl)}`
-            }
-            className="w-full h-full border-none"
-            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
-          />
+          {hyperbeamActive && hyperbeamEmbedUrl ? (
+            <iframe
+              src={hyperbeamEmbedUrl}
+              className="w-full h-full border-none bg-black"
+              allow="autoplay; camera; microphone; clipboard-read; clipboard-write;"
+            />
+          ) : (
+            <iframe
+              id="browser-iframe"
+              src={
+                browserUrl.includes("google.com") 
+                  ? browserUrl 
+                  : `${SOCKET_URL}/api/proxy?url=${encodeURIComponent(browserUrl)}`
+              }
+              className="w-full h-full border-none"
+              sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+            />
+          )}
         </div>
       </div>
 
@@ -652,6 +748,22 @@ export default function Room() {
             <span className="hidden md:inline whitespace-nowrap">{isTabSharing ? "⏹ Durdur" : "📺 Sekme+Ses"}</span>
           </button>
 
+          {/* Cloud Browser Button (Hyperbeam) */}
+          <button
+            onClick={handleHyperbeamClick}
+            title={hyperbeamActive ? "Bulut Tarayıcıyı Sonlandır" : "Sanal Bulut PC Tarayıcısı Başlat (Sıfır Donma, Harika Ses)"}
+            className={`${btnBase} gap-1.5 px-3 text-sm font-semibold ${
+              hyperbeamActive
+                ? "bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-rose-500/30 border border-rose-400/50 animate-pulse"
+                : "bg-gradient-to-r from-pink-500/20 to-rose-500/20 text-pink-300 hover:from-pink-500/40 hover:to-rose-500/40 border border-pink-500/30"
+            }`}
+          >
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            <span className="hidden md:inline whitespace-nowrap">{hyperbeamActive ? "⏹ Bulut Kapat" : "☁️ Bulut PC"}</span>
+          </button>
+
 
 
 
@@ -781,6 +893,70 @@ export default function Room() {
                 className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-2xl transition-colors text-sm shadow-lg shadow-purple-500/20"
               >
                 Anladım, Deneyeceğim!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* HYPERBEAM KEY MODAL */}
+      {showHyperbeamKeyModal && (
+        <div className="absolute inset-0 z-[110] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="w-full max-w-md bg-zinc-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden my-auto">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-pink-500 to-rose-600 px-6 py-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-white font-bold text-lg">☁️ Bulut PC Tarayıcısı</h2>
+                <p className="text-white/70 text-xs mt-0.5">Telefon ve PC'de sıfır donma ile birlikte izleyin!</p>
+              </div>
+              <button
+                onClick={() => setShowHyperbeamKeyModal(false)}
+                className="text-white/60 hover:text-white text-2xl leading-none"
+              >✕</button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4 text-sm text-white/70">
+              <p className="leading-relaxed">
+                Bulut sunucularımızda çalışan güçlü bir sanal bilgisayarı odaya bağlayarak, **telefon veya PC fark etmeksizin** tüm filmleri ve videoları sıfır gecikmeyle, mükemmel ses ve görüntü kalitesiyle izleyebilirsiniz.
+              </p>
+
+              <div className="bg-white/5 p-4 rounded-2xl border border-white/5 space-y-2 text-xs">
+                <p className="font-semibold text-white">🔑 Ücretsiz API Anahtarınızı Alın (1 Dakika):</p>
+                <ol className="list-decimal list-inside space-y-1 text-white/60">
+                  <li><a href="https://hyperbeam.com" target="_blank" rel="noopener noreferrer" className="text-pink-400 hover:underline">hyperbeam.com</a> sitesine gidin.</li>
+                  <li>Ücretsiz bir hesap oluşturun.</li>
+                  <li>Developer Portal'dan **API Key** değerini kopyalayın.</li>
+                  <li>Aşağıdaki kutuya yapıştırıp "Başlat"a basın.</li>
+                </ol>
+                <p className="text-pink-400 mt-1 font-medium">💡 Her ay 10,000 dakika (~166 saat) tamamen ücretsizdir!</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-white/50">Hyperbeam API Key</label>
+                <input
+                  type="password"
+                  value={hyperbeamApiKey}
+                  onChange={e => setHyperbeamApiKey(e.target.value)}
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-pink-500 placeholder:text-white/20"
+                  placeholder="sk_live_..."
+                />
+              </div>
+            </div>
+
+            <div className="px-6 pb-6 flex gap-3">
+              <button
+                onClick={() => setShowHyperbeamKeyModal(false)}
+                className="flex-1 bg-white/5 hover:bg-white/10 text-white font-semibold py-3 rounded-2xl transition-colors text-sm"
+              >
+                İptal
+              </button>
+              <button
+                onClick={() => startHyperbeamSession(hyperbeamApiKey)}
+                disabled={!hyperbeamApiKey.trim()}
+                className="flex-1 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 disabled:opacity-50 text-white font-semibold py-3 rounded-2xl transition-colors text-sm shadow-lg shadow-pink-500/20"
+              >
+                Bulut PC Başlat
               </button>
             </div>
           </div>

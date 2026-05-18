@@ -202,6 +202,58 @@ app.get("/api/search", async (req, res) => {
   }
 });
 
+// Hyperbeam Cloud Virtual Browser Sessions Store
+const hyperbeamSessions = {};
+
+app.post("/api/hyperbeam-session", async (req, res) => {
+  const { roomId } = req.body;
+  const apiKey = req.headers["x-hyperbeam-key"];
+
+  if (!roomId) {
+    return res.status(400).send("roomId is required");
+  }
+
+  // If a session already exists for this room, return it immediately
+  if (hyperbeamSessions[roomId]) {
+    return res.json(hyperbeamSessions[roomId]);
+  }
+
+  if (!apiKey) {
+    return res.status(400).send("Hyperbeam API key is required");
+  }
+
+  try {
+    const response = await fetch("https://engine.hyperbeam.com/v0/vm", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        start_url: "https://www.google.com",
+        ublock: true // Automatically block ads for a clean movie viewing experience!
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || "Hyperbeam returned an error status");
+    }
+
+    const data = await response.json();
+    hyperbeamSessions[roomId] = {
+      embedUrl: data.embed_url,
+      sessionId: data.session_id
+    };
+
+    console.log(`[Hyperbeam] Session created for room ${roomId}: ${data.session_id}`);
+    res.json(hyperbeamSessions[roomId]);
+  } catch (err) {
+    console.error("[Hyperbeam] Session creation failed:", err);
+    res.status(500).send("Sanal tarayıcı başlatılamadı: " + err.message);
+  }
+});
+
 // Internal Native Home Page for WatchTogether
 app.get("/api/home", (req, res) => {
   res.send(`
@@ -650,6 +702,10 @@ io.on("connection", (socket) => {
 
   socket.on("screen-share-state", ({ roomId, active }) => {
     socket.to(roomId).emit("screen-share-state", { active });
+  });
+
+  socket.on("hyperbeam-state", ({ roomId, active, embedUrl }) => {
+    socket.to(roomId).emit("hyperbeam-state", { active, embedUrl });
   });
 
   socket.on("browser-navigate", ({ roomId, url }) => {
