@@ -175,15 +175,15 @@ export default function Room() {
   const reactionIdCounter = useRef(0);
   
   // Synchronized Real-Time Co-Browsing States
-  const [browserUrl, setBrowserUrl] = useState("internal://home");
-  const [inputUrl, setInputUrl] = useState("internal://home");
-  const [historyStack, setHistoryStack] = useState<string[]>(["internal://home"]);
+  const [browserUrl, setBrowserUrl] = useState("https://www.google.com/webhp?igu=1");
+  const [inputUrl, setInputUrl] = useState("https://www.google.com/webhp?igu=1");
+  const [historyStack, setHistoryStack] = useState<string[]>(["https://www.google.com/webhp?igu=1"]);
   const [historyIndex, setHistoryIndex] = useState(0);
 
   // Sync address bar input whenever actual URL changes
   useEffect(() => {
-    // Hide 'internal://home' in the address bar for a cleaner look
-    setInputUrl(browserUrl === "internal://home" ? "" : browserUrl);
+    // Hide the igu=1 parameter in the address bar for a cleaner look
+    setInputUrl(browserUrl === "https://www.google.com/webhp?igu=1" ? "https://www.google.com/" : browserUrl);
   }, [browserUrl]);
 
   // Synchronized Navigation function
@@ -191,11 +191,11 @@ export default function Room() {
     let url = target.trim();
     if (!url) return;
 
-    if (url !== "internal://home" && !/^https?:\/\//i.test(url)) {
+    if (!/^https?:\/\//i.test(url)) {
       if (url.includes(".") && !url.includes(" ")) {
         url = "https://" + url;
       } else {
-        url = `${SOCKET_URL}/api/search?q=${encodeURIComponent(url)}`;
+        url = `https://www.google.com/search?q=${encodeURIComponent(url)}&igu=1`;
       }
     }
 
@@ -470,7 +470,7 @@ export default function Room() {
           </div>
 
           <button
-            onClick={() => navigateBrowser("internal://home")}
+            onClick={() => navigateBrowser("https://www.google.com/webhp?igu=1")}
             className="text-xs text-indigo-400 hover:text-white bg-indigo-500/10 hover:bg-indigo-500 border border-indigo-500/30 px-3 py-2 rounded-xl transition-all font-semibold"
           >
             Ana Sayfa
@@ -481,14 +481,12 @@ export default function Room() {
           <iframe
             id="browser-iframe"
             src={
-              browserUrl === "internal://home" 
-                ? `${SOCKET_URL}/api/home` 
-                : browserUrl.includes("/api/search") 
-                  ? browserUrl 
-                  : `${SOCKET_URL}/api/proxy?url=${encodeURIComponent(browserUrl)}`
+              browserUrl.includes("google.com") 
+                ? browserUrl 
+                : `${SOCKET_URL}/api/proxy?url=${encodeURIComponent(browserUrl)}`
             }
             className="w-full h-full border-none"
-            sandbox="allow-same-origin allow-scripts allow-forms"
+            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
           />
         </div>
       </div>
