@@ -195,7 +195,7 @@ export default function Room() {
       if (url.includes(".") && !url.includes(" ")) {
         url = "https://" + url;
       } else {
-        url = `https://yandex.com.tr/search/?text=${encodeURIComponent(url)}`;
+        url = `${SOCKET_URL}/api/search?q=${encodeURIComponent(url)}`;
       }
     }
 
@@ -477,11 +477,16 @@ export default function Room() {
           </button>
         </div>
 
-        {/* Real Web Proxy Iframe */}
         <div className="flex-1 w-full h-full relative overflow-hidden bg-[#0c0c0e]">
           <iframe
             id="browser-iframe"
-            src={browserUrl === "internal://home" ? `${SOCKET_URL}/api/home` : `${SOCKET_URL}/api/proxy?url=${encodeURIComponent(browserUrl)}`}
+            src={
+              browserUrl === "internal://home" 
+                ? `${SOCKET_URL}/api/home` 
+                : browserUrl.includes("/api/search") 
+                  ? browserUrl 
+                  : `${SOCKET_URL}/api/proxy?url=${encodeURIComponent(browserUrl)}`
+            }
             className="w-full h-full border-none"
             sandbox="allow-same-origin allow-scripts allow-forms"
           />

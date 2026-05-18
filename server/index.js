@@ -244,7 +244,7 @@ app.get("/api/home", (req, res) => {
               if (url.includes('.') && !url.includes(' ')) {
                 url = 'https://' + url;
               } else {
-                url = 'https://yandex.com.tr/search/?text=' + encodeURIComponent(url);
+                url = window.location.origin + '/api/search?q=' + encodeURIComponent(url);
               }
             }
             
@@ -255,6 +255,91 @@ app.get("/api/home", (req, res) => {
       </body>
     </html>
   `);
+});
+
+// Dedicated internal search proxy to bypass all bot protections using DuckDuckGo Lite
+app.get("/api/search", async (req, res) => {
+  const query = req.query.q;
+  if (!query) return res.status(400).send("Arama sorgusu eksik.");
+
+  try {
+    const response = await fetch("https://lite.duckduckgo.com/lite/", {
+      method: "POST",
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: "q=" + encodeURIComponent(query)
+    });
+
+    let html = await response.text();
+    const absoluteProxyBase = `${req.protocol}://${req.get("host")}/api/proxy`;
+    const searchProxyBase = `${req.protocol}://${req.get("host")}/api/search`;
+
+    // Rewrite all href links to point to our proxy
+    html = html.replace(/(<a\s+[^>]*href=["'])([^"']*)(["'])/gi, (match, prefix, link, suffix) => {
+      try {
+        if (!link || link.startsWith("javascript:") || link.startsWith("mailto:")) return match;
+        const absoluteUrl = new URL(link, "https://lite.duckduckgo.com/lite/").href;
+        
+        // If it's a pagination link for duckduckgo search itself, rewrite to our search route or proxy
+        if (absoluteUrl.includes("lite.duckduckgo.com")) {
+            return `${prefix}${absoluteProxyBase}?url=${encodeURIComponent(absoluteUrl)}${suffix}`;
+        }
+        
+        return `${prefix}${absoluteProxyBase}?url=${encodeURIComponent(absoluteUrl)}${suffix}`;
+      } catch (e) {
+        return match;
+      }
+    });
+
+    // Rewrite forms inside the search results to point to our search proxy
+    html = html.replace(/(<form\s+[^>]*action=["'])([^"']*)(["'])/gi, (match, prefix, link, suffix) => {
+       return `${prefix}${absoluteProxyBase}?url=${encodeURIComponent("https://lite.duckduckgo.com/lite/")}${suffix}`;
+    });
+
+    // Inject base href tag
+    const baseTag = `<base href="https://lite.duckduckgo.com/">`;
+    if (/<head>/i.test(html)) {
+      html = html.replace(/<head>/i, `<head>${baseTag}`);
+    } else {
+      html = `<head>${baseTag}</head>` + html;
+    }
+
+    // Inject styles to make it look beautiful and dark-themed!
+    const darkThemeStyle = `
+      <style>
+        body { background-color: #0c0c0e !important; color: #e4e4e7 !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important; padding: 20px !important; }
+        a { color: #818cf8 !important; text-decoration: none !important; }
+        a:hover { text-decoration: underline !important; }
+        .result-snippet { color: #a1a1aa !important; }
+        .result-url { color: #34d399 !important; font-size: 0.85em !important; }
+        input[type="text"] { background: #27272a !important; color: #fff !important; border: 1px solid #3f3f46 !important; padding: 8px !important; border-radius: 8px !important; }
+        input[type="submit"] { background: #6366f1 !important; color: #fff !important; border: none !important; padding: 8px 16px !important; border-radius: 8px !important; cursor: pointer !important; }
+      </style>
+    `;
+    html = html.replace(/<\/head>/i, `${darkThemeStyle}</head>`);
+
+    // Inject our custom sync script so iframe navigation is communicated back to the parent React app
+    const injectedScript = `
+      <script>
+        // Intercept clicks on links
+        document.addEventListener('click', function(e) {
+          var link = e.target.closest('a');
+          if (link && link.href) {
+            e.preventDefault();
+            window.parent.postMessage({ type: 'iframe-navigate', url: link.href }, '*');
+          }
+        }, true);
+      </script>
+    `;
+    html = html.replace(/<\/body>/i, `${injectedScript}</body>`);
+
+    res.send(html);
+  } catch (error) {
+    console.error("[Web Proxy] Error proxying search:", error);
+    res.status(500).send("Arama sirasinda hata: " + error.message);
+  }
 });
 
 // Real-Time Web Proxy for Interactive Co-Browsing
