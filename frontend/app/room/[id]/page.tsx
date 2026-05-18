@@ -697,9 +697,10 @@ export default function Room() {
       )}
 
       {/* MOBILE SCREEN SHARE GUIDE MODAL */}
+      {/* MOBILE SCREEN SHARE GUIDE MODAL */}
       {showMobileGuide && (
-        <div className="absolute inset-0 z-[100] flex items-end md:items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm bg-zinc-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden">
+        <div className="absolute inset-0 z-[100] flex items-end md:items-center justify-center bg-black/85 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="w-full max-w-md bg-zinc-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden my-auto">
             {/* Header */}
             <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4 flex items-center justify-between">
               <div>
@@ -713,7 +714,7 @@ export default function Room() {
             </div>
 
             {/* Steps */}
-            <div className="px-6 py-5 space-y-4">
+            <div className="px-6 py-5 space-y-4 max-h-[60vh] overflow-y-auto">
               <div className="flex gap-3 items-start">
                 <span className="w-7 h-7 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-400 text-sm font-bold flex-shrink-0 flex items-center justify-center">1</span>
                 <div>
@@ -726,7 +727,7 @@ export default function Room() {
                 <span className="w-7 h-7 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-400 text-sm font-bold flex-shrink-0 flex items-center justify-center">2</span>
                 <div>
                   <p className="text-white text-sm font-semibold">Bildirim panelini aşağı çek</p>
-                  <p className="text-white/50 text-xs mt-0.5">Ekranın üstünden aşağı kaydırarak hızlı ayarlar panelini aç.</p>
+                  <p className="text-white/50 text-xs mt-0.5">Ekranın üstünden aşağı iki kez kaydırarak hızlı ayarlar panelini aç.</p>
                 </div>
               </div>
 
@@ -747,14 +748,39 @@ export default function Room() {
                   <p className="text-white/50 text-xs mt-0.5">Kaydı başlattıktan sonra bu uygulamaya geri dön — arkadaşın seni otomatik izlemeye başlar!</p>
                 </div>
               </div>
+
+              {/* Troubleshooting Segment */}
+              <div className="pt-4 border-t border-white/5 space-y-3">
+                <p className="text-sm font-bold text-indigo-400 flex items-center gap-1.5">
+                  🔍 Ekran Kaydı Düğmesi Çıkmıyor mu?
+                </p>
+                
+                <div className="bg-white/5 p-3.5 rounded-2xl border border-white/5 text-xs text-white/70 space-y-2">
+                  <p className="font-semibold text-white">Yöntem A: Paneli Düzenle (Düğmeyi Ekle)</p>
+                  <p className="leading-relaxed">
+                    Hızlı ayarlar panelini sonuna kadar indirin. Sağ üstteki veya alt kısmdaki <span className="text-indigo-300 font-medium">Kalem (Düzenle)</span> veya <span className="text-indigo-300 font-medium">Üç Nokta</span> simgesine basın. Alttaki gizli simgeler arasından <span className="text-indigo-300 font-medium">"Ekran Kaydedici"</span> simgesini bulup yukarıya (aktif olanların yanına) sürükleyin.
+                  </p>
+                </div>
+
+                <div className="bg-white/5 p-3.5 rounded-2xl border border-white/5 text-xs text-white/70 space-y-2">
+                  <p className="font-semibold text-white">Yöntem B: Ücretsiz Uygulama Kullan</p>
+                  <p className="leading-relaxed">
+                    Telefonunuzda dahili ekran kaydedici yoksa, Google Play Store'dan tamamen ücretsiz ve reklamsız olan <span className="text-indigo-300 font-medium">"AZ Screen Recorder"</span> veya <span className="text-indigo-300 font-medium">"XRecorder"</span> uygulamasını indirin. Bu uygulamalar tek tıkla sesli ekran paylaşımı yapmanızı sağlar.
+                  </p>
+                </div>
+
+                <div className="bg-indigo-500/10 p-3 rounded-2xl border border-indigo-500/20 text-xs text-indigo-300 text-center">
+                  💡 En iyi ve pürüzsüz deneyim için izleme partisini bir bilgisayardan (PC/Laptop) Chrome sekme paylaşımıyla başlatmanızı öneririz!
+                </div>
+              </div>
             </div>
 
-            <div className="px-6 pb-5">
+            <div className="px-6 py-4 bg-zinc-950/50 border-t border-white/5 flex gap-3">
               <button
                 onClick={() => setShowMobileGuide(false)}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-2xl transition-colors text-sm"
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-2xl transition-colors text-sm shadow-lg shadow-purple-500/20"
               >
-                Anladım, başlayacağım!
+                Anladım, Deneyeceğim!
               </button>
             </div>
           </div>
