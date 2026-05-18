@@ -9,143 +9,34 @@ import VideoPlayer from "@/components/VideoPlayer";
 type ReactionItem = { id: number; type: "emoji" | "gif"; content: string };
 
 const QUICK_EMOJIS = [
-  // Faces / Smiles (30)
-  "­şİÇ","­şİâ","­şİä","­şİü","­şİå","­şİà","­şİé","­şñú","­şİè","­şİç","­şÖé","­şÖâ","­şİë","­şİî","­şİı","­şÑ░","­şİİ","­şİù","­şİÖ","­şİÜ","­şİï","­şİø","­şİØ","­şİ£","­şñ¬","­şñ¿","­şğÉ","­şñô","­şİÄ","­şÑ©",
+  // Smiles & Feelings (30)
+  "😀", "😂", "🤣", "😊", "😇", "🙂", "🙃", "😉", "😌", "😍", "🥰", "😘", "😗", "😙", "😚", "😋", "😛", "😝", "😜", "🤪", "🤨", "🧐", "🤓", "😎", "🤩", "🥳", "😏", "😒", "😞", "😔",
   // Hand Gestures (30)
-  "­şæı","­şæÄ","­şæè","Ô£è","­şñø","­şñ£","­şñŞ","Ô£î´©Å","­şñş","­şñİ","­şæî","­şñî","­şñÅ","­şæê","­şæë","­şæå","­şæç","ÔİØ´©Å","Ô£ï","­şñÜ","­şæï","­şñÖ","­şÆ¬","­şæÅ","­şÖî","­şæÉ","­şñ▓","­şñØ","­şÖÅ","Ô£ı´©Å",
+  "👍", "👎", "👌", "👊", "✊", "🤛", "🤜", "🤞", "✌️", "🤟", "🤘", "👈", "👉", "👆", "👇", "☝️", "✋", "🤚", "🖐️", "🖖", "👋", "✍️", "👏", "🙌", "👐", "🤲", "🤝", "🙏", "💅", "🤳",
   // Hearts & Love (20)
-  "ÔØñ´©Å","­şğí","­şÆø","­şÆÜ","­şÆÖ","­şÆ£","­şûñ","­şñı","­şñÄ","­şÆö","ÔØñ´©ÅÔÇı­şöÑ","ÔØñ´©ÅÔÇı­ş®╣","ÔØú´©Å","­şÆò","­şÆŞ","­şÆô","­şÆù","­şÆû","­şÆİ","­şÆØ",
+  "❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", "❤️‍🔥", "❤️‍🩹", "❣️", "💕", "💞", "💓", "💗", "💖", "💘", "💝",
   // Party & Celebration (15)
-  "­şÄë","­şÄè","­şÑ│","­şÄê","­şÄé","­şÄü","­şÄç","­şÄå","­şğ¿","Ô£¿","­şîş","Ô¡É´©Å","ÔÜí´©Å","­şÆÑ","­şöÑ",
+  "🎉", "🎊", "🎈", "🎂", "🎆", "🎇", "🧨", "✨", "🌟", "⭐", "🔔", "🏆", "🎖️", "🔥", "💥",
   // Expressions / Random (25)
-  "­şİ▒","­şİ¡","­şİ«","­şÑ▒","­şİ┤","­şñö","­şİñ","­şİí","­şñ¼","­şñ»","­ş½á","­şÆÇ","­şæ¢","­şñû","­şÄâ","­şİ║","­şæ╗","­şæ╣","­şÆ»","­şÄ»","­şÜÇ","­şæÇ","­şÆñ","­şñæ","­şÄ«"
+  "🤔", "😳", "😱", "😨", "😰", "😥", "😢", "😭", "🤤", "🥱", "😴", "🥶", "🥵", "🤢", "🤮", "🤧", "😷", "🤒", "🤕", "👻", "💀", "👽", "👾", "🤖", "🤡"
 ];
 
 const GIFS = [
-  // Happy / Laughing / Celebrating
-  { label: "Happy Dance", url: "https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif" },
-  { label: "OMG Excited", url: "https://media.giphy.com/media/5VKbvrjxpVJCM/giphy.gif" },
-  { label: "Minion Laugh", url: "https://media.giphy.com/media/Vbtc9VG53qLCg/giphy.gif" },
-  { label: "Confetti Celebration", url: "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif" },
-  { label: "Love Heart", url: "https://media.giphy.com/media/26Ff3yDMoOp5ySMkc/giphy.gif" },
-  { label: "Applause Clapping", url: "https://media.giphy.com/media/l0MYEqEzwMWFCg8rm/giphy.gif" },
-  { label: "Surprised Face", url: "https://media.giphy.com/media/26ufdipQqU84H52sg/giphy.gif" },
-  { label: "Muscle Flex", url: "https://media.giphy.com/media/l0HlvtIPzPdt2uO0E/giphy.gif" },
-  { label: "Crying Out Loud", url: "https://media.giphy.com/media/xT9IgG50Lg7rusyxfm/giphy.gif" },
-  { label: "Facepalm", url: "https://media.giphy.com/media/3og0IPikp8PxHbyK2Y/giphy.gif" },
-  { label: "Sleeping Cat", url: "https://media.giphy.com/media/l46Cy1rHbQ92uuLXa/giphy.gif" },
-  { label: "Dance Floor", url: "https://media.giphy.com/media/l0MYGb1vogBi9sFKo/giphy.gif" },
-  { label: "Yes excited", url: "https://media.giphy.com/media/5GoVLqeAOo6PK/giphy.gif" },
-  { label: "Sad Alone", url: "https://media.giphy.com/media/ISOckXUybVfQ4/giphy.gif" },
-  { label: "Angry Tableflip", url: "https://media.giphy.com/media/l1IY5NRhxqIn22Vfa/giphy.gif" },
-  { label: "Green Check", url: "https://media.giphy.com/media/xT9DPpf0zTqRASyzgA/giphy.gif" },
-  { label: "Red Cross No", url: "https://media.giphy.com/media/1iTX97yx7H6K4/giphy.gif" },
-  { label: "Scared Scream", url: "https://media.giphy.com/media/90F8aUepslB84/giphy.gif" },
-  { label: "Deal With It", url: "https://media.giphy.com/media/jQumaiwjA3sHW/giphy.gif" },
-  { label: "Mind Blown", url: "https://media.giphy.com/media/3o7TKMt1VVNkHV2PaE/giphy.gif" },
-  { label: "Party Popper", url: "https://media.giphy.com/media/3oEjHV0z8S7WM4KV7i/giphy.gif" },
-  { label: "Awkward Grimace", url: "https://media.giphy.com/media/l3vRnHhk5cUGBJRaa/giphy.gif" },
-  { label: "Gold Trophy", url: "https://media.giphy.com/media/26u4lOMA8JKSnL9Uk/giphy.gif" },
-  { label: "100 Percent", url: "https://media.giphy.com/media/DhstvI3zZ598Nb1rFf/giphy.gif" },
-  { label: "Rolling Laugh", url: "https://media.giphy.com/media/kiOvNHLSKBESk/giphy.gif" },
-  { label: "Heart Hands", url: "https://media.giphy.com/media/26AHLNnJ4UlOhFD7W/giphy.gif" },
-  { label: "Confetti Toss", url: "https://media.giphy.com/media/26tOZ42Mg6pbTUPHW/giphy.gif" },
-  { label: "Rocket Launch", url: "https://media.giphy.com/media/3o7WTBGtbSCEsaU4s0/giphy.gif" },
-  { label: "Skeleton Death", url: "https://media.giphy.com/media/MCfhrrNN1goH6/giphy.gif" },
-  { label: "Shifty Eyes", url: "https://media.giphy.com/media/3ohc10nduj1irsuzgA/giphy.gif" },
-
-  // Expressions & Actions
-  { label: "Wink", url: "https://media.giphy.com/media/3o7abKhOpu0NXS3HBC/giphy.gif" },
-  { label: "Thumbs Up", url: "https://media.giphy.com/media/g9582DNuQppxC/giphy.gif" },
-  { label: "Mic Drop", url: "https://media.giphy.com/media/3o7qDEq2bMbcbPRVP2/giphy.gif" },
-  { label: "Popcorn Eat", url: "https://media.giphy.com/media/13cptIwW9bgzkA/giphy.gif" },
-  { label: "Sassy Snicker", url: "https://media.giphy.com/media/3ohzdYJK1wAdPWVk88/giphy.gif" },
-  { label: "Facepalm Picard", url: "https://media.giphy.com/media/XsUtdIeJ0MWMo/giphy.gif" },
-  { label: "Happy Dance Kid", url: "https://media.giphy.com/media/l41YkxvU8Z751CXYI/giphy.gif" },
-  { label: "Shocked Cat", url: "https://media.giphy.com/media/12OMY457Zu7xJG/giphy.gif" },
-  { label: "Slow Clap", url: "https://media.giphy.com/media/2xO4L2iIBgjw4/giphy.gif" },
-  { label: "Nod Yes", url: "https://media.giphy.com/media/3o7abKhOpu0NXS3HBC/giphy.gif" },
-  { label: "Shake Head No", url: "https://media.giphy.com/media/daPCSyIHEaf2o/giphy.gif" },
-  { label: "Bored Sleep", url: "https://media.giphy.com/media/26AHONQ79FdWZhAI0/giphy.gif" },
-  { label: "Hooray Jump", url: "https://media.giphy.com/media/KYElw07CpsnOTQxet1/giphy.gif" },
-  { label: "Salute", url: "https://media.giphy.com/media/l0ExbnGIX9sMFS7PG/giphy.gif" },
-  { label: "High Five", url: "https://media.giphy.com/media/3oEjHV0z8S7WM4KV7i/giphy.gif" },
-  { label: "Crying Baby", url: "https://media.giphy.com/media/2WxWfiavndgcM/giphy.gif" },
-  { label: "Dance Carlton", url: "https://media.giphy.com/media/pa37AAGzKXoek/giphy.gif" },
-  { label: "Shocked Minion", url: "https://media.giphy.com/media/10VJ2YDmosmWg0/giphy.gif" },
-  { label: "Confused Travolta", url: "https://media.giphy.com/media/g01ZnwAUvutuK8KNdH/giphy.gif" },
-  { label: "Mic Wave", url: "https://media.giphy.com/media/dzaUX7CAG0Ihi/giphy.gif" },
-  { label: "Victory V", url: "https://media.giphy.com/media/l0HlHFRbmaZtBRhXG/giphy.gif" },
-  { label: "Blow Kiss", url: "https://media.giphy.com/media/3o7TKoWXm3okO1SjAI/giphy.gif" },
-  { label: "Evil Smile", url: "https://media.giphy.com/media/XVbQsIjdXDNys/giphy.gif" },
-  { label: "Sweating Bullets", url: "https://media.giphy.com/media/32mC2kXYRC30k/giphy.gif" },
-  { label: "Angry Baby", url: "https://media.giphy.com/media/11tIB893VLShXi/giphy.gif" },
-  { label: "Thinking hard", url: "https://media.giphy.com/media/d3mlE7uhX8KFgEmY/giphy.gif" },
-  { label: "Applause Joker", url: "https://media.giphy.com/media/A2W1Qq8WZNsVq/giphy.gif" },
-  { label: "Dancing Cat", url: "https://media.giphy.com/media/13CoXDiaCcC2EA/giphy.gif" },
-  { label: "Staring Dog", url: "https://media.giphy.com/media/ghuvaCOI6kBYk/giphy.gif" },
-  { label: "Ooooh Damn", url: "https://media.giphy.com/media/xT0xeJpnrWC4XWblUk/giphy.gif" },
-
-  // Pop Culture & Memes
-  { label: "Fire Flame", url: "https://media.giphy.com/media/T2vDaYr8y1LRm/giphy.gif" },
-  { label: "Party Hard", url: "https://media.giphy.com/media/l2JIdnF6aJmSgSmgE/giphy.gif" },
-  { label: "DJ Cat", url: "https://media.giphy.com/media/3o72EX5QZ9N9d51dqo/giphy.gif" },
-  { label: "Cool Sun", url: "https://media.giphy.com/media/1xVbZRfBYAoMYy4Oi6/giphy.gif" },
-  { label: "Laughing Dog", url: "https://media.giphy.com/media/10ECcyDXfJQA0w/giphy.gif" },
-  { label: "Yawn", url: "https://media.giphy.com/media/mkhMTZalL0LyU/giphy.gif" },
-  { label: "Hungry Eat", url: "https://media.giphy.com/media/ZgYAzwP5PfN84/giphy.gif" },
-  { label: "Fistbump", url: "https://media.giphy.com/media/bp01bkt6TIRzy/giphy.gif" },
-  { label: "Running Out", url: "https://media.giphy.com/media/3o7ZetIsjtbkgNE1I4/giphy.gif" },
-  { label: "Celebrating Win", url: "https://media.giphy.com/media/13GKP7ACGjpxO8/giphy.gif" },
-  { label: "Wink Cat", url: "https://media.giphy.com/media/C9x8gX5jFt22A/giphy.gif" },
-  { label: "Love Eyes Dog", url: "https://media.giphy.com/media/l4pTdcifP6CtmN8lm/giphy.gif" },
-  { label: "Dancing Banana", url: "https://media.giphy.com/media/EluFWEdnZtv1e/giphy.gif" },
-  { label: "Good Job", url: "https://media.giphy.com/media/l3q2XhfQ8oCkm1Ts4/giphy.gif" },
-  { label: "OMG Surprised", url: "https://media.giphy.com/media/xT77XWum9yHCwUjFWg/giphy.gif" },
-  { label: "Sad Rain", url: "https://media.giphy.com/media/OPU6wUKdXaoRG/giphy.gif" },
-  { label: "Smug Smile", url: "https://media.giphy.com/media/d1E1ms5DgbT62MKs/giphy.gif" },
-  { label: "Nervous laugh", url: "https://media.giphy.com/media/H5C8CevNMbpBqJFqeH/giphy.gif" },
-  { label: "Mindblown Einstein", url: "https://media.giphy.com/media/l0IylOPCNkiqOgMyA/giphy.gif" },
-  { label: "Waving Hello", url: "https://media.giphy.com/media/3og0IMJcSI8p6hYQXS/giphy.gif" },
-  { label: "Goodbye Wave", url: "https://media.giphy.com/media/26u4b45b8KlgAB7iM/giphy.gif" },
-  { label: "Clapping Seal", url: "https://media.giphy.com/media/129N27j6wT3b2/giphy.gif" },
-  { label: "Scream Edvard", url: "https://media.giphy.com/media/3otWpoQUMzLPPAxnaM/giphy.gif" },
-  { label: "Rolling Head", url: "https://media.giphy.com/media/d2YWTOsVtuPa/giphy.gif" },
-  { label: "Dizzy Spin", url: "https://media.giphy.com/media/3o7bu3XilJ5BOESgbK/giphy.gif" },
-  { label: "Dancing parrot", url: "https://media.giphy.com/media/l3q2zVr6cu95nF6O4/giphy.gif" },
-  { label: "Angry Face", url: "https://media.giphy.com/media/3o7qE1YN7aBOFPRw8E/giphy.gif" },
-  { label: "Crying Niagara", url: "https://media.giphy.com/media/j0qSbeNFuzjhXKFVSP/giphy.gif" },
-  { label: "Thumbs Up Kid", url: "https://media.giphy.com/media/111ebonMs90YLu/giphy.gif" },
-  { label: "Aww Cute", url: "https://media.giphy.com/media/14urMYvBD4YNsY/giphy.gif" },
-
-  // Famous Meme Classics
-  { label: "Mind Blown Galaxy", url: "https://media.giphy.com/media/Um3ljJl8jfqCI/giphy.gif" },
-  { label: "Shining Star", url: "https://media.giphy.com/media/26tPplGWjN0x9CH9C/giphy.gif" },
-  { label: "Spidey Dance", url: "https://media.giphy.com/media/10pxA5bQx6am8o/giphy.gif" },
-  { label: "Homer Bush", url: "https://media.giphy.com/media/jUwpNzg9mcyZi/giphy.gif" },
-  { label: "Popcorn Thriller", url: "https://media.giphy.com/media/pUeXcg80cO8I8/giphy.gif" },
-  { label: "Surprised Pikachu", url: "https://media.giphy.com/media/3kzJvEciJa94SMW3hN/giphy.gif" },
-  { label: "This Is Fine", url: "https://media.giphy.com/media/3ntq5qnEtvVba/giphy.gif" },
-  { label: "Success Kid", url: "https://media.giphy.com/media/B0vFJHv75FC36/giphy.gif" },
-  { label: "Side Eye Chloe", url: "https://media.giphy.com/media/AAsj7jABcH/giphy.gif" },
-  { label: "Disaster Girl", url: "https://media.giphy.com/media/13d2jHlSlxklVe/giphy.gif" },
-  { label: "Kermit Typing", url: "https://media.giphy.com/media/ukqBV7WM4BQ4w/giphy.gif" },
-  { label: "Salt Bae", url: "https://media.giphy.com/media/l4Jz3a8jO92crUlWM/giphy.gif" },
-  { label: "Roll Safe Think", url: "https://media.giphy.com/media/cIyGxK5fDLyZ7KLjHC/giphy.gif" },
-  { label: "Shocked Kawaii", url: "https://media.giphy.com/media/3o85xGocUH8TCQDDry/giphy.gif" },
-  { label: "Crying Kim K", url: "https://media.giphy.com/media/yoJC2Js9NZpf9IZ7Bm/giphy.gif" },
-  { label: "Drake Hotline", url: "https://media.giphy.com/media/fSRs6aJJTE0HN89Ztk/giphy.gif" },
-  { label: "Shrug Emoji", url: "https://media.giphy.com/media/l3q2Lz5cYCDuH2e3e/giphy.gif" },
-  { label: "Okay Okay", url: "https://media.giphy.com/media/1xVbZRfBYAoMYy4Oi6/giphy.gif" },
-  { label: "Dancing Groot", url: "https://media.giphy.com/media/14bhmZtBNhVnIk/giphy.gif" },
-  { label: "Confused Cat", url: "https://media.giphy.com/media/26gR0YFZxW5p1Vjx6/giphy.gif" },
-  { label: "Coughing Cat", url: "https://media.giphy.com/media/4Z1NhFZCWQUMec15RD/giphy.gif" },
-  { label: "Excited Minion", url: "https://media.giphy.com/media/F3j9DCMUXE42k/giphy.gif" },
-  { label: "Waving Cat", url: "https://media.giphy.com/media/V8E0HbaPsGU8/giphy.gif" },
-  { label: "Clapping Penguin", url: "https://media.giphy.com/media/l2JHRhAtnJSDNJ2py/giphy.gif" },
-  { label: "Facepalm Monkey", url: "https://media.giphy.com/media/d30qasEQJH5Ms3mg/giphy.gif" },
-  { label: "Nodding Dog", url: "https://media.giphy.com/media/fV2maQ4MAyUxrZWHEy/giphy.gif" },
-  { label: "Crying Stream", url: "https://media.giphy.com/media/f95F2O3E5uRLy/giphy.gif" }
+  { label: "😂 Kahkaha", url: "https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif" },
+  { label: "🎉 Tebrik", url: "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif" },
+  { label: "😍 Aşk", url: "https://media.giphy.com/media/26Ff3yDMoOp5ySMkc/giphy.gif" },
+  { label: "😮 Şok", url: "https://media.giphy.com/media/26ufdipQqU84H52sg/giphy.gif" },
+  { label: "😢 Ağlama", url: "https://media.giphy.com/media/xT9IgG50Lg7rusyxfm/giphy.gif" },
+  { label: "🤦 Ee yani?", url: "https://media.giphy.com/media/3og0IPikp8PxHbyK2Y/giphy.gif" },
+  { label: "🍿 Popcorn", url: "https://media.giphy.com/media/13cptIwW9bgzkA/giphy.gif" },
+  { label: "🔥 Harika", url: "https://media.giphy.com/media/T2vDaYr8y1LRm/giphy.gif" },
+  { label: "🐱 Şirin Kedi", url: "https://media.giphy.com/media/12OMY457Zu7xJG/giphy.gif" },
+  { label: "🍌 Muz Dansı", url: "https://media.giphy.com/media/EluFWEdnZtv1e/giphy.gif" },
+  { label: "👍 Harika", url: "https://media.giphy.com/media/l3q2XhfQ8oCkm1Ts4/giphy.gif" },
+  { label: "🚀 Uçuş", url: "https://media.giphy.com/media/3o7WTBGtbSCEsaU4s0/giphy.gif" },
+  { label: "👻 Dansçı", url: "https://media.giphy.com/media/10pxA5bQx6am8o/giphy.gif" },
+  { label: "👋 Selam", url: "https://media.giphy.com/media/3og0IMJcSI8p6hYQXS/giphy.gif" },
+  { label: "🎬 Sinema", url: "https://media.giphy.com/media/pUeXcg80cO8I8/giphy.gif" }
 ];
 
 export default function Room() {
@@ -153,7 +44,23 @@ export default function Room() {
   const router = useRouter();
   const roomId = params.id as string;
 
-  const { stream, remoteStream, toggleMute, toggleVideo, shareScreen, shareBrowserTab, isMuted, isVideoOff, isScreenSharing, isTabSharing, peerConnected, screenShareError, showMobileGuide, setShowMobileGuide } = useWebRTC(roomId);
+  const {
+    stream,
+    remoteStream,
+    toggleMute,
+    toggleVideo,
+    shareScreen,
+    shareBrowserTab,
+    isMuted,
+    isVideoOff,
+    isRemoteVideoOff,
+    isScreenSharing,
+    isTabSharing,
+    peerConnected,
+    screenShareError,
+    showMobileGuide,
+    setShowMobileGuide
+  } = useWebRTC(roomId);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -460,6 +367,21 @@ export default function Room() {
   const handleHyperbeamClick = useCallback(async () => {
     if (hyperbeamActive) {
       if (confirm("Sanal bulut bilgisayarını sonlandırmak istiyor musunuz?")) {
+        const savedKey = localStorage.getItem("hyperbeam_api_key");
+        if (savedKey) {
+          try {
+            await fetch(`${SOCKET_URL}/api/hyperbeam-session`, {
+              method: "DELETE",
+              headers: {
+                "Content-Type": "application/json",
+                "x-hyperbeam-key": savedKey
+              },
+              body: JSON.stringify({ roomId })
+            });
+          } catch (e) {
+            console.error("Failed to delete hyperbeam session on backend:", e);
+          }
+        }
         setHyperbeamActive(false);
         setHyperbeamEmbedUrl(null);
         socket.emit("hyperbeam-state", { roomId, active: false });
@@ -551,120 +473,122 @@ export default function Room() {
       <div className="absolute inset-0 w-full h-full bg-[#0a0a0c] flex flex-col z-0">
         
         {/* Sleek Browser Navigation Top Bar / Hyperbeam Minimalism */}
-        {hyperbeamActive ? (
-          <div className="w-full bg-[#121215]/90 border-b border-white/5 px-4 py-2.5 flex items-center justify-between shadow-xl z-20 backdrop-blur-md mt-14 md:mt-0">
-            <div className="flex items-center gap-3">
-              <span className="flex h-3.5 w-3.5 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-rose-500"></span>
-              </span>
-              <span className="text-xs md:text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-rose-500 select-none">
-                ☁️ Bulut PC Aktif (Sıfır Donma, Harika Ses)
-              </span>
-            </div>
+        {!isImmersive && (
+          hyperbeamActive ? (
+            <div className="w-full bg-[#121215]/90 border-b border-white/5 px-4 py-2.5 flex items-center justify-between shadow-xl z-20 backdrop-blur-md mt-14 md:mt-0">
+              <div className="flex items-center gap-3">
+                <span className="flex h-3.5 w-3.5 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-rose-500"></span>
+                </span>
+                <span className="text-xs md:text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-rose-500 select-none">
+                  ☁️ Bulut PC Aktif
+                </span>
+              </div>
 
-            {/* Robust Mobile/PC Keyboard Input helper */}
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                className="bg-black/50 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-pink-500 w-32 sm:w-48 md:w-64"
-                placeholder="⌨️ Mobil Klavye ile Yaz..."
-                onInput={(e: any) => {
-                  const val = e.target.value;
-                  if (val.length > 0) {
-                    const char = val.substring(val.length - 1);
-                    if (hyperbeamInstance) {
-                      hyperbeamInstance.sendEvent({ type: "keydown", key: char });
-                      hyperbeamInstance.sendEvent({ type: "keyup", key: char });
+              {/* Robust Mobile/PC Keyboard Input helper */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  className="bg-black/50 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-pink-500 w-32 sm:w-48 md:w-64"
+                  placeholder="⌨️ Mobil Klavye ile Yaz..."
+                  onInput={(e: any) => {
+                    const val = e.target.value;
+                    if (val.length > 0) {
+                      const char = val.substring(val.length - 1);
+                      if (hyperbeamInstance) {
+                        hyperbeamInstance.sendEvent({ type: "keydown", key: char });
+                        hyperbeamInstance.sendEvent({ type: "keyup", key: char });
+                      }
+                      e.target.value = ""; // Keep cleared so they can type next char
                     }
-                    e.target.value = ""; // Keep cleared so they can type next char
-                  }
-                }}
-                onKeyDown={(e: any) => {
-                  if (e.key === "Enter") {
-                    if (hyperbeamInstance) {
-                      hyperbeamInstance.sendEvent({ type: "keydown", key: "Enter" });
-                      hyperbeamInstance.sendEvent({ type: "keyup", key: "Enter" });
+                  }}
+                  onKeyDown={(e: any) => {
+                    if (e.key === "Enter") {
+                      if (hyperbeamInstance) {
+                        hyperbeamInstance.sendEvent({ type: "keydown", key: "Enter" });
+                        hyperbeamInstance.sendEvent({ type: "keyup", key: "Enter" });
+                      }
+                    } else if (e.key === "Backspace") {
+                      if (hyperbeamInstance) {
+                        hyperbeamInstance.sendEvent({ type: "keydown", key: "Backspace" });
+                        hyperbeamInstance.sendEvent({ type: "keyup", key: "Backspace" });
+                      }
                     }
-                  } else if (e.key === "Backspace") {
-                    if (hyperbeamInstance) {
-                      hyperbeamInstance.sendEvent({ type: "keydown", key: "Backspace" });
-                      hyperbeamInstance.sendEvent({ type: "keyup", key: "Backspace" });
-                    }
-                  }
-                }}
-              />
+                  }}
+                />
+
+                <button
+                  onClick={handleHyperbeamClick}
+                  className="text-xs text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 border border-rose-500/30 px-3 py-2 rounded-xl transition-all font-semibold"
+                >
+                  Bulut Kapat
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="w-full bg-[#121215]/90 border-b border-white/5 px-4 py-2.5 flex items-center gap-3 shadow-xl z-20 backdrop-blur-md mt-14 md:mt-0">
+              {/* Mac-like decorative colored circles */}
+              <div className="flex gap-1.5 pr-1.5 hidden md:flex">
+                <span className="w-3 h-3 rounded-full bg-red-500/80" />
+                <span className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                <span className="w-3 h-3 rounded-full bg-green-500/80" />
+              </div>
+
+              {/* Navigation Control Buttons */}
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={handleBack}
+                  disabled={historyIndex === 0}
+                  className="p-2 rounded-xl hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent text-white/80 transition-all font-bold text-sm"
+                  title="Geri"
+                >
+                  ←
+                </button>
+                <button
+                  onClick={handleForward}
+                  disabled={historyIndex === historyStack.length - 1}
+                  className="p-2 rounded-xl hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent text-white/80 transition-all font-bold text-sm"
+                  title="İleri"
+                >
+                  →
+                </button>
+                <button
+                  onClick={() => {
+                    const iframe = document.getElementById("browser-iframe") as HTMLIFrameElement;
+                    if (iframe) iframe.src = iframe.src;
+                  }}
+                  className="p-2 rounded-xl hover:bg-white/10 text-white/80 transition-all text-sm"
+                  title="Yenile"
+                >
+                  ↻
+                </button>
+              </div>
+
+              {/* Elegant Address bar input */}
+              <div className="flex-1 bg-black/40 border border-white/5 rounded-2xl px-4 py-2 flex items-center gap-2.5 text-xs text-white/40 shadow-inner">
+                <span className="text-indigo-400 text-xs font-semibold select-none flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                  Paylaşımlı Ekran
+                </span>
+                <span className="text-white/10 select-none">|</span>
+                <input
+                  value={inputUrl}
+                  onChange={e => setInputUrl(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && navigateBrowser(inputUrl)}
+                  className="flex-1 bg-transparent text-white/90 outline-none placeholder:text-white/30 text-xs md:text-sm font-medium"
+                  placeholder="Film aratın veya direkt film/makale linki yapıştırın..."
+                />
+              </div>
 
               <button
-                onClick={handleHyperbeamClick}
-                className="text-xs text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 border border-rose-500/30 px-3 py-2 rounded-xl transition-all font-semibold"
+                onClick={() => navigateBrowser("https://www.google.com/webhp?igu=1")}
+                className="text-xs text-indigo-400 hover:text-white bg-indigo-500/10 hover:bg-indigo-500 border border-indigo-500/30 px-3 py-2 rounded-xl transition-all font-semibold"
               >
-                Bulut Kapat
+                Ana Sayfa
               </button>
             </div>
-          </div>
-        ) : (
-          <div className="w-full bg-[#121215]/90 border-b border-white/5 px-4 py-2.5 flex items-center gap-3 shadow-xl z-20 backdrop-blur-md mt-14 md:mt-0">
-            {/* Mac-like decorative colored circles */}
-            <div className="flex gap-1.5 pr-1.5 hidden md:flex">
-              <span className="w-3 h-3 rounded-full bg-red-500/80" />
-              <span className="w-3 h-3 rounded-full bg-yellow-500/80" />
-              <span className="w-3 h-3 rounded-full bg-green-500/80" />
-            </div>
-
-            {/* Navigation Control Buttons */}
-            <div className="flex items-center gap-1">
-              <button
-                onClick={handleBack}
-                disabled={historyIndex === 0}
-                className="p-2 rounded-xl hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent text-white/80 transition-all font-bold text-sm"
-                title="Geri"
-              >
-                ÔùÇ
-              </button>
-              <button
-                onClick={handleForward}
-                disabled={historyIndex === historyStack.length - 1}
-                className="p-2 rounded-xl hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent text-white/80 transition-all font-bold text-sm"
-                title="─░leri"
-              >
-                ÔûÂ
-              </button>
-              <button
-                onClick={() => {
-                  const iframe = document.getElementById("browser-iframe") as HTMLIFrameElement;
-                  if (iframe) iframe.src = iframe.src;
-                }}
-                className="p-2 rounded-xl hover:bg-white/10 text-white/80 transition-all text-sm"
-                title="Yenile"
-              >
-                ­şöä
-              </button>
-            </div>
-
-            {/* Elegant Address bar input */}
-            <div className="flex-1 bg-black/40 border border-white/5 rounded-2xl px-4 py-2 flex items-center gap-2.5 text-xs text-white/40 shadow-inner">
-              <span className="text-indigo-400 text-xs font-semibold select-none flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-                Payla┼ş─▒ml─▒ Ekran
-              </span>
-              <span className="text-white/10 select-none">|</span>
-              <input
-                value={inputUrl}
-                onChange={e => setInputUrl(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && navigateBrowser(inputUrl)}
-                className="flex-1 bg-transparent text-white/90 outline-none placeholder:text-white/30 text-xs md:text-sm font-medium"
-                placeholder="Film arat─▒n veya direkt film/makale linki yap─▒┼şt─▒r─▒n..."
-              />
-            </div>
-
-            <button
-              onClick={() => navigateBrowser("https://www.google.com/webhp?igu=1")}
-              className="text-xs text-indigo-400 hover:text-white bg-indigo-500/10 hover:bg-indigo-500 border border-indigo-500/30 px-3 py-2 rounded-xl transition-all font-semibold"
-            >
-              Ana Sayfa
-            </button>
-          </div>
+          )
         )}
 
         <div className="flex-1 w-full h-full relative overflow-hidden bg-[#0c0c0e]">
@@ -703,22 +627,27 @@ export default function Room() {
       {/* SCREEN SHARE ERROR TOAST */}
       {screenShareError && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-red-900/90 text-white px-5 py-3 rounded-2xl text-sm border border-red-500/50 backdrop-blur-md max-w-xs text-center shadow-xl">
-          µÅÉÕıç {screenShareError}
+          Hata: {screenShareError}
         </div>
       )}
 
       {/* TOP BAR */}
       {!isImmersive && (
-        <div className="absolute top-0 left-0 w-full p-4 md:p-6 bg-gradient-to-b from-black/80 to-transparent z-10 flex justify-between items-start pointer-events-none">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-xl md:text-2xl font-bold tracking-tight drop-shadow-md">Watch<span className="text-indigo-500">Together</span></h1>
-            <span className="bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md border border-indigo-500/30 w-max">Room: {roomId}</span>
-          </div>
+        <div className="absolute top-4 left-4 z-10 flex items-center gap-2 pointer-events-none">
+          <span className="bg-black/60 text-white/90 px-3.5 py-1.5 rounded-full text-xs font-semibold backdrop-blur-md border border-white/10 flex items-center gap-2 shadow-lg">
+            Oda ID: {roomId}
+            {hyperbeamActive && (
+              <span className="flex h-2.5 w-2.5 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+              </span>
+            )}
+          </span>
         </div>
       )}
 
       {/* FLOATING DRAGGABLE BUBBLE 1: LOCAL WEBCAM */}
-      {!isImmersive && stream && (
+      {!isImmersive && stream && !isVideoOff && (
         <div
           className={`absolute z-30 overflow-hidden rounded-2xl border border-white/10 shadow-2xl backdrop-blur-md bg-black/40 transition-shadow ${isDraggingLocal ? "cursor-grabbing scale-105" : "cursor-grab hover:border-white/30"}`}
           style={{ width: 160, height: 110, left: localPos.x, top: localPos.y, touchAction: "none" }}
@@ -729,17 +658,9 @@ export default function Room() {
             autoPlay
             playsInline
             muted={true}
-            className={`w-full h-full object-cover ${isVideoOff ? "opacity-0" : "opacity-100"}`}
+            className="w-full h-full object-cover"
             style={{ transform: "scaleX(-1)" }}
           />
-          {isVideoOff && (
-            <div className="absolute inset-0 flex items-center justify-center bg-zinc-800">
-              <svg className="w-8 h-8 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                <line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
-              </svg>
-            </div>
-          )}
           <div className="absolute bottom-1.5 left-2 pointer-events-none">
             <span className="bg-black/60 px-1.5 py-0.5 rounded text-[10px] font-medium border border-white/10">Siz</span>
           </div>
@@ -747,7 +668,7 @@ export default function Room() {
       )}
 
       {/* FLOATING DRAGGABLE BUBBLE 2: REMOTE WEBCAM */}
-      {!isImmersive && remoteStream && (
+      {!isImmersive && remoteStream && !isRemoteVideoOff && (
         <div
           className={`absolute z-30 overflow-hidden rounded-2xl border border-white/10 shadow-2xl backdrop-blur-md bg-black/40 transition-shadow ${isDraggingRemote ? "cursor-grabbing scale-105" : "cursor-grab hover:border-white/30"}`}
           style={{ width: 160, height: 110, left: remotePos.x, top: remotePos.y, touchAction: "none" }}
@@ -760,7 +681,7 @@ export default function Room() {
             className="w-full h-full object-cover"
           />
           <div className="absolute bottom-1.5 left-2 pointer-events-none">
-            <span className="bg-black/60 px-1.5 py-0.5 rounded text-[10px] font-medium border border-white/10">Arkada┼ş─▒n─▒z</span>
+            <span className="bg-black/60 px-1.5 py-0.5 rounded text-[10px] font-medium border border-white/10">Arkadaşınız</span>
           </div>
         </div>
       )}
@@ -774,10 +695,10 @@ export default function Room() {
             {(["emoji", "gif"] as const).map(tab => (
               <button key={tab} onClick={() => setReactionTab(tab)}
                 className={`flex-1 py-3 text-sm font-semibold uppercase tracking-wide transition-colors ${reactionTab === tab ? "text-indigo-400 border-b-2 border-indigo-400" : "text-white/40 hover:text-white/70"}`}>
-                {tab === "emoji" ? "­şİÇ Emoji" : "­şÄÑ GIF"}
+                {tab === "emoji" ? "😀 Emoji" : "🎬 GIF"}
               </button>
             ))}
-            <button onClick={() => setShowReactionPanel(false)} className="px-4 text-white/40 hover:text-white/80 text-xl leading-none pb-0.5">Ô£ò</button>
+            <button onClick={() => setShowReactionPanel(false)} className="px-4 text-white/40 hover:text-white/80 text-xl leading-none pb-0.5">✕</button>
           </div>
 
           {reactionTab === "emoji" && (
@@ -904,9 +825,16 @@ export default function Room() {
       )}
 
       {isImmersive && (
-        <div className="absolute top-8 left-1/2 -translate-x-1/2 bg-black/50 backdrop-blur-md text-white/70 px-4 py-2 rounded-full text-sm font-medium pointer-events-none animate-pulse">
-          Tam ekrandan çıkmak için dokunun
-        </div>
+        <button
+          onClick={() => setIsImmersive(false)}
+          className="absolute top-4 right-4 z-50 p-3 rounded-full bg-black/40 hover:bg-black/80 border border-white/10 text-white/40 hover:text-white backdrop-blur-md transition-all duration-300 opacity-40 hover:opacity-100 shadow-lg"
+          title="Menüyü Göster"
+        >
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+        </button>
       )}
 
       {/* MOBILE SCREEN SHARE GUIDE MODAL */}

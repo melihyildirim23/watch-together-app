@@ -236,7 +236,12 @@ app.post("/api/hyperbeam-session", async (req, res) => {
         quality: {
           mode: "smooth" // Optimize video stream compression specifically for smooth movie/video playback
         },
-        tag: roomId // Use roomId as a tag so Hyperbeam reuses the active VM if it exists, preventing rate limits!
+        tag: roomId, // Use roomId as a tag so Hyperbeam reuses the active VM if it exists, preventing rate limits!
+        timeout: {
+          inactive: 900,  // Terminate after 15 minutes of user inactivity to free up resources!
+          offline: 180,   // Terminate after 3 minutes of empty session (no one connected/in iframe)!
+          absolute: 14400 // Hard absolute limit of 4 hours to prevent overnight billing/runaway costs!
+        }
       })
     });
 
@@ -256,6 +261,46 @@ app.post("/api/hyperbeam-session", async (req, res) => {
   } catch (err) {
     console.error("[Hyperbeam] Session creation failed:", err);
     res.status(500).send("Sanal tarayıcı başlatılamadı: " + err.message);
+  }
+});
+
+app.delete("/api/hyperbeam-session", async (req, res) => {
+  const { roomId } = req.body;
+  const apiKey = req.headers["x-hyperbeam-key"];
+
+  if (!roomId) {
+    return res.status(400).send("roomId is required");
+  }
+
+  const session = hyperbeamSessions[roomId];
+  if (!session) {
+    return res.status(404).send("No active session found for this room");
+  }
+
+  if (!apiKey) {
+    return res.status(400).send("Hyperbeam API key is required");
+  }
+
+  try {
+    console.log(`[Hyperbeam] Terminating session ${session.sessionId} for room ${roomId}`);
+    const response = await fetch(`https://engine.hyperbeam.com/v0/vm/${session.sessionId}`, {
+      method: "DELETE",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`
+      }
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || "Hyperbeam returned an error status during deletion");
+    }
+
+    delete hyperbeamSessions[roomId];
+    console.log(`[Hyperbeam] Session terminated successfully for room ${roomId}`);
+    res.json({ status: "terminated", roomId });
+  } catch (err) {
+    console.error("[Hyperbeam] Session termination failed:", err);
+    res.status(500).send("Sanal tarayıcı kapatılamadı: " + err.message);
   }
 });
 
@@ -700,6 +745,11 @@ io.on("connection", (socket) => {
   socket.on("reaction", (payload) => {
     const { roomId, ...rest } = payload;
     socket.to(roomId).emit("reaction", rest);
+  });
+
+  socket.on("camera-state", (payload) => {
+    const { roomId, ...rest } = payload;
+    socket.to(roomId).emit("camera-state", rest);
   });
 
   socket.on("video-url", ({ roomId, url }) => {

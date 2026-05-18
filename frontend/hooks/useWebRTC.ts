@@ -37,6 +37,7 @@ export const useWebRTC = (roomId: string) => {
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
+  const [isRemoteVideoOff, setIsRemoteVideoOff] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [peerConnected, setPeerConnected] = useState(false);
   const [screenShareError, setScreenShareError] = useState<string | null>(null);
@@ -154,7 +155,12 @@ export const useWebRTC = (roomId: string) => {
             setRemoteStream(new MediaStream(remoteStream.getTracks()));
           });
 
-          peer.on("connect", () => { console.log("[WebRTC] PEER CONNECTED"); setPeerConnected(true); });
+          peer.on("connect", () => {
+            console.log("[WebRTC] PEER CONNECTED");
+            setPeerConnected(true);
+            // Send current camera state to remote peer
+            socket.emit("camera-state", { roomId, enabled: !isVideoOff });
+          });
           peer.on("close", () => { isPeerActive.current = false; setPeerConnected(false); });
           peer.on("error", (err: Error) => { console.error("[WebRTC] Peer error:", err); });
         });
@@ -178,7 +184,16 @@ export const useWebRTC = (roomId: string) => {
           });
         });
 
-        socket.on("peer-disconnected", () => { setRemoteStream(null); setPeerConnected(false); });
+        socket.on("camera-state", ({ enabled }: { enabled: boolean }) => {
+          console.log("[WebRTC] Remote camera state changed:", enabled);
+          setIsRemoteVideoOff(!enabled);
+        });
+
+        socket.on("peer-disconnected", () => {
+          setRemoteStream(null);
+          setPeerConnected(false);
+          setIsRemoteVideoOff(false);
+        });
 
         console.log("[WebRTC] JOIN REQUEST SENT");
         socket.emit("join-room", roomId);
@@ -197,10 +212,12 @@ export const useWebRTC = (roomId: string) => {
       socket.off("offer");
       socket.off("answer");
       socket.off("ice-candidate");
+      socket.off("camera-state");
       socket.off("peer-disconnected");
       hasPeerStarted.current = false;
       isPeerActive.current = false;
       setPeerConnected(false);
+      setIsRemoteVideoOff(false);
       if (peerRef.current) {
         try { if (!peerRef.current.destroyed) peerRef.current.destroy(); } catch (err) { console.warn("[WebRTC] Peer destroy error:", err); }
         peerRef.current = null;
@@ -227,8 +244,12 @@ export const useWebRTC = (roomId: string) => {
   const toggleVideo = useCallback(() => {
     if (!stream) return;
     const track = stream.getVideoTracks()[0];
-    if (track) { track.enabled = !track.enabled; setIsVideoOff(!track.enabled); }
-  }, [stream]);
+    if (track) {
+      track.enabled = !track.enabled;
+      setIsVideoOff(!track.enabled);
+      socket.emit("camera-state", { roomId, enabled: !track.enabled });
+    }
+  }, [stream, roomId]);
 
   // ---------------------------------------------------------------------------
   // stopScreenShare
@@ -452,6 +473,7 @@ export const useWebRTC = (roomId: string) => {
     shareBrowserTab,
     isMuted,
     isVideoOff,
+    isRemoteVideoOff,
     isScreenSharing,
     isTabSharing,
     peerConnected,
