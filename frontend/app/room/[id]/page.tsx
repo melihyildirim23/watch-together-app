@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useWebRTC } from "@/hooks/useWebRTC";
 import { useEffect, useRef, useState, useCallback } from "react";
-import { socket } from "@/lib/socket";
+import { socket, SOCKET_URL } from "@/lib/socket";
 import VideoPlayer from "@/components/VideoPlayer";
 
 type ReactionItem = { id: number; type: "emoji" | "gif"; content: string };
@@ -145,12 +145,7 @@ const GIFS = [
   { label: "Clapping Penguin", url: "https://media.giphy.com/media/l2JHRhAtnJSDNJ2py/giphy.gif" },
   { label: "Facepalm Monkey", url: "https://media.giphy.com/media/d30qasEQJH5Ms3mg/giphy.gif" },
   { label: "Nodding Dog", url: "https://media.giphy.com/media/fV2maQ4MAyUxrZWHEy/giphy.gif" },
-  { label: "Yes Yes Yes", url: "https://media.giphy.com/media/3WCNY2RhcmnwZCVKbC/giphy.gif" },
-  { label: "Crying Stream", url: "https://media.giphy.com/media/f95F2O3E5uRLy/giphy.gif" },
-  { label: "Sassy Girl", url: "https://media.giphy.com/media/148x4ezZxvpIeA/giphy.gif" },
-  { label: "Yawn Dog", url: "https://media.giphy.com/media/HteV6h0c06T6/giphy.gif" },
-  { label: "Popcorn Hulk", url: "https://media.giphy.com/media/OYNSEwxBYpphm/giphy.gif" },
-  { label: "Awesome Win", url: "https://media.giphy.com/media/TdfyKr6O243AGoSRYn/giphy.gif" }
+  { label: "Crying Stream", url: "https://media.giphy.com/media/f95F2O3E5uRLy/giphy.gif" }
 ];
 
 export default function Room() {
@@ -160,69 +155,194 @@ export default function Room() {
 
   const { stream, remoteStream, toggleMute, toggleVideo, shareScreen, isMuted, isVideoOff, isScreenSharing, peerConnected, screenShareError } = useWebRTC(roomId);
 
-  const centerVideoRef = useRef<HTMLVideoElement>(null);
-  const bubbleVideoRef = useRef<HTMLVideoElement>(null);
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
-  const [isRemoteScreenSharing, setIsRemoteScreenSharing] = useState(false);
-  const [position, setPosition] = useState({ x: 20, y: 20 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  // Separate draggable coordinates for local and remote webcams (initially left side out of search area)
+  const [localPos, setLocalPos] = useState({ x: 24, y: 100 });
+  const [isDraggingLocal, setIsDraggingLocal] = useState(false);
+  const [dragOffsetLocal, setDragOffsetLocal] = useState({ x: 0, y: 0 });
+
+  const [remotePos, setRemotePos] = useState({ x: 24, y: 235 });
+  const [isDraggingRemote, setIsDraggingRemote] = useState(false);
+  const [dragOffsetRemote, setDragOffsetRemote] = useState({ x: 0, y: 0 });
+
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isImmersive, setIsImmersive] = useState(false);
   const [showReactionPanel, setShowReactionPanel] = useState(false);
   const [reactionTab, setReactionTab] = useState<"emoji" | "gif">("emoji");
   const [activeReactions, setActiveReactions] = useState<ReactionItem[]>([]);
   const reactionIdCounter = useRef(0);
-  const [showVideoPlayer, setShowVideoPlayer] = useState(false);
+  
+  // Synchronized Real-Time Co-Browsing States
+  const [browserUrl, setBrowserUrl] = useState("https://www.google.com");
+  const [inputUrl, setInputUrl] = useState("https://www.google.com");
+  const [historyStack, setHistoryStack] = useState<string[]>(["https://www.google.com"]);
+  const [historyIndex, setHistoryIndex] = useState(0);
 
-  const handlePointerDown = (e: React.PointerEvent) => {
-    setIsDragging(true);
-    setDragOffset({ x: e.clientX - position.x, y: e.clientY - position.y });
+  // Sync address bar input whenever actual URL changes
+  useEffect(() => {
+    setInputUrl(browserUrl);
+  }, [browserUrl]);
+
+  // Synchronized Navigation function
+  const navigateBrowser = useCallback((target: string, emit = true) => {
+    let url = target.trim();
+    if (!url) return;
+
+    if (!/^https?:\/\//i.test(url)) {
+      if (url.includes(".") && !url.includes(" ")) {
+        url = "https://" + url;
+      } else {
+        url = `https://www.google.com/search?q=${encodeURIComponent(url)}`;
+      }
+    }
+
+    setBrowserUrl(url);
+
+    // Update history stack
+    const newStack = historyStack.slice(0, historyIndex + 1);
+    newStack.push(url);
+    setHistoryStack(newStack);
+    setHistoryIndex(newStack.length - 1);
+
+    if (emit) {
+      socket.emit("browser-navigate", { roomId, url });
+    }
+  }, [roomId, historyStack, historyIndex]);
+
+  // Synchronized History Back
+  const handleBack = useCallback(() => {
+    if (historyIndex > 0) {
+      const prevUrl = historyStack[historyIndex - 1];
+      setHistoryIndex(historyIndex - 1);
+      setBrowserUrl(prevUrl);
+      socket.emit("browser-navigate", { roomId, url: prevUrl });
+    }
+  }, [roomId, historyStack, historyIndex]);
+
+  // Synchronized History Forward
+  const handleForward = useCallback(() => {
+    if (historyIndex < historyStack.length - 1) {
+      const nextUrl = historyStack[historyIndex + 1];
+      setHistoryIndex(historyIndex + 1);
+      setBrowserUrl(nextUrl);
+      socket.emit("browser-navigate", { roomId, url: nextUrl });
+    }
+  }, [roomId, historyStack, historyIndex]);
+
+  // Local drag handlers
+  const handlePointerDownLocal = (e: React.PointerEvent) => {
+    setIsDraggingLocal(true);
+    setDragOffsetLocal({ x: e.clientX - localPos.x, y: e.clientY - localPos.y });
     e.currentTarget.setPointerCapture(e.pointerId);
   };
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (isDragging) setPosition({ x: e.clientX - dragOffset.x, y: e.clientY - dragOffset.y });
+  const handlePointerMoveLocal = (e: React.PointerEvent) => {
+    if (isDraggingLocal) setLocalPos({ x: e.clientX - dragOffsetLocal.x, y: e.clientY - dragOffsetLocal.y });
   };
-  const handlePointerUp = (e: React.PointerEvent) => {
-    setIsDragging(false);
+  const handlePointerUpLocal = (e: React.PointerEvent) => {
+    setIsDraggingLocal(false);
     e.currentTarget.releasePointerCapture(e.pointerId);
   };
 
-  // Dynamically route streams: Center gets screen sharing (local or remote), Bubble gets camera
-  useEffect(() => {
-    const centerVideo = centerVideoRef.current;
-    const bubbleVideo = bubbleVideoRef.current;
+  // Remote drag handlers
+  const handlePointerDownRemote = (e: React.PointerEvent) => {
+    setIsDraggingRemote(true);
+    setDragOffsetRemote({ x: e.clientX - remotePos.x, y: e.clientY - remotePos.y });
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const handlePointerMoveRemote = (e: React.PointerEvent) => {
+    if (isDraggingRemote) setRemotePos({ x: e.clientX - dragOffsetRemote.x, y: e.clientY - dragOffsetRemote.y });
+  };
+  const handlePointerUpRemote = (e: React.PointerEvent) => {
+    setIsDraggingRemote(false);
+    e.currentTarget.releasePointerCapture(e.pointerId);
+  };
 
-    if (isScreenSharing) {
-      // You are sharing your screen
-      if (centerVideo) centerVideo.srcObject = stream;
-      if (bubbleVideo) bubbleVideo.srcObject = remoteStream;
-    } else if (isRemoteScreenSharing) {
-      // Remote peer is sharing their screen
-      if (centerVideo) centerVideo.srcObject = remoteStream;
-      if (bubbleVideo) bubbleVideo.srcObject = stream;
-    } else {
-      // Normal Mode
-      if (centerVideo) centerVideo.srcObject = remoteStream;
-      if (bubbleVideo) bubbleVideo.srcObject = stream;
+  // Bind video streams directly to floating webcam refs
+  useEffect(() => {
+    if (localVideoRef.current && stream) {
+      localVideoRef.current.srcObject = stream;
     }
-  }, [stream, remoteStream, isScreenSharing, isRemoteScreenSharing]);
+  }, [stream]);
 
-  // Synchronize screen share status to remote peer via socket
   useEffect(() => {
-    socket.emit("screen-share-state", { roomId, active: isScreenSharing });
-  }, [roomId, isScreenSharing]);
+    if (remoteVideoRef.current && remoteStream) {
+      remoteVideoRef.current.srcObject = remoteStream;
+    }
+  }, [remoteStream]);
 
-  // Listen to remote peer's screen share status
+  // Listen to postMessages from inside the proxy iframe (scroll, click, form submit, video play/pause)
   useEffect(() => {
-    const handleRemoteState = ({ active }: { active: boolean }) => {
-      setIsRemoteScreenSharing(active);
+    const handleIframeMessage = (e: MessageEvent) => {
+      if (!e.data || typeof e.data !== "object") return;
+
+      if (e.data.type === "iframe-navigate") {
+        const targetUrl = e.data.url;
+        console.log("[In-App Browser] Intercepted navigation:", targetUrl);
+        setBrowserUrl(targetUrl);
+
+        const newStack = historyStack.slice(0, historyIndex + 1);
+        newStack.push(targetUrl);
+        setHistoryStack(newStack);
+        setHistoryIndex(newStack.length - 1);
+
+        socket.emit("browser-navigate", { roomId, url: targetUrl });
+      }
+
+      if (e.data.type === "iframe-scroll") {
+        const { scrollX, scrollY } = e.data;
+        socket.emit("browser-scroll", { roomId, scrollX, scrollY });
+      }
+
+      if (e.data.type === "iframe-video") {
+        const { action, time } = e.data;
+        socket.emit("browser-video", { roomId, action, time });
+      }
     };
-    socket.on("screen-share-state", handleRemoteState);
+
+    window.addEventListener("message", handleIframeMessage);
     return () => {
-      socket.off("screen-share-state", handleRemoteState);
+      window.removeEventListener("message", handleIframeMessage);
     };
-  }, []);
+  }, [roomId, historyStack, historyIndex]);
+
+  // Listen to remote Socket co-browsing events
+  useEffect(() => {
+    const handleRemoteNavigate = ({ url }: { url: string }) => {
+      console.log("[Socket] Remote navigated browser to:", url);
+      setBrowserUrl(url);
+
+      const newStack = historyStack.slice(0, historyIndex + 1);
+      newStack.push(url);
+      setHistoryStack(newStack);
+      setHistoryIndex(newStack.length - 1);
+    };
+
+    const handleRemoteScroll = ({ scrollX, scrollY }: { scrollX: number; scrollY: number }) => {
+      const iframe = document.getElementById("browser-iframe") as HTMLIFrameElement;
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ type: "sync-scroll", scrollX, scrollY }, "*");
+      }
+    };
+
+    const handleRemoteVideo = ({ action, time }: { action: string; time: number }) => {
+      const iframe = document.getElementById("browser-iframe") as HTMLIFrameElement;
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ type: "sync-video", action, time }, "*");
+      }
+    };
+
+    socket.on("browser-navigate", handleRemoteNavigate);
+    socket.on("browser-scroll", handleRemoteScroll);
+    socket.on("browser-video", handleRemoteVideo);
+
+    return () => {
+      socket.off("browser-navigate", handleRemoteNavigate);
+      socket.off("browser-scroll", handleRemoteScroll);
+      socket.off("browser-video", handleRemoteVideo);
+    };
+  }, [historyStack, historyIndex]);
 
   const showReaction = useCallback((type: "emoji" | "gif", content: string) => {
     const id = reactionIdCounter.current++;
@@ -255,7 +375,6 @@ export default function Room() {
 
   const btnBase = "flex-shrink-0 p-3 md:p-4 rounded-full transition-all duration-300 shadow-lg flex items-center justify-center";
   const btnGhost = `${btnBase} bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20`;
-  const isDefaultPos = position.x === 20 && position.y === 20;
 
   return (
     <div className="w-screen h-screen bg-[#0f0f11] relative overflow-hidden flex items-center justify-center font-sans text-white">
@@ -271,33 +390,85 @@ export default function Room() {
         .reaction-pop { animation: popInFadeOut 3.5s forwards; position:absolute; left:50%; top:50%; }
       `}} />
 
-      {/* CENTER STREAM AREA (CAMERA OR SCREEN SHARE) */}
-      {(isScreenSharing || isRemoteScreenSharing || remoteStream) ? (
-        <div className="absolute inset-0 w-full h-full bg-black flex items-center justify-center z-0">
-          <video
-            ref={centerVideoRef}
-            autoPlay
-            playsInline
-            muted={isScreenSharing} // Mute local screen share to prevent feedback loops
-            className="w-full h-full object-contain md:object-cover cursor-pointer"
-            onClick={() => { if (isImmersive) setIsImmersive(false); }}
-          />
-          {(isScreenSharing || isRemoteScreenSharing) && (
-            <div className="absolute top-4 left-4 bg-indigo-600/90 text-white px-3.5 py-1.5 rounded-full text-xs font-semibold backdrop-blur-md shadow-lg border border-indigo-400/30 flex items-center gap-2 z-10">
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-              <span>{isScreenSharing ? "Sizin Ekranınız Paylaşılıyor (Sekme)" : "Arkadaşınızın Ekranı Paylaşılıyor"}</span>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center z-0">
-          <div className="w-24 h-24 mb-4 rounded-full border-4 border-indigo-500/30 border-t-indigo-500 animate-spin" />
-          <p className="text-xl font-medium text-white/70">{peerConnected ? "Peer left the room" : "Waiting for peer to join..."}</p>
-          <p className="text-sm text-white/40 mt-2">Room ID: {roomId}</p>
-        </div>
-      )}
+      {/* REAL-TIME CO-BROWSING INTERACTIVE BROWSER */}
+      <div className="absolute inset-0 w-full h-full bg-[#0a0a0c] flex flex-col z-0">
+        
+        {/* Sleek Browser Navigation Top Bar */}
+        <div className="w-full bg-[#121215]/90 border-b border-white/5 px-4 py-2.5 flex items-center gap-3 shadow-xl z-20 backdrop-blur-md mt-14 md:mt-0">
+          
+          {/* Mac-like decorative colored circles */}
+          <div className="flex gap-1.5 pr-1.5 hidden md:flex">
+            <span className="w-3 h-3 rounded-full bg-red-500/80" />
+            <span className="w-3 h-3 rounded-full bg-yellow-500/80" />
+            <span className="w-3 h-3 rounded-full bg-green-500/80" />
+          </div>
 
-      {/* ACTIVE REACTIONS */}
+          {/* Navigation Control Buttons */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleBack}
+              disabled={historyIndex === 0}
+              className="p-2 rounded-xl hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent text-white/80 transition-all font-bold text-sm"
+              title="Geri"
+            >
+              ◀
+            </button>
+            <button
+              onClick={handleForward}
+              disabled={historyIndex === historyStack.length - 1}
+              className="p-2 rounded-xl hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent text-white/80 transition-all font-bold text-sm"
+              title="İleri"
+            >
+              ▶
+            </button>
+            <button
+              onClick={() => {
+                const iframe = document.getElementById("browser-iframe") as HTMLIFrameElement;
+                if (iframe) iframe.src = iframe.src;
+              }}
+              className="p-2 rounded-xl hover:bg-white/10 text-white/80 transition-all text-sm"
+              title="Yenile"
+            >
+              🔄
+            </button>
+          </div>
+
+          {/* Elegant Address bar input */}
+          <div className="flex-1 bg-black/40 border border-white/5 rounded-2xl px-4 py-2 flex items-center gap-2.5 text-xs text-white/40 shadow-inner">
+            <span className="text-indigo-400 text-xs font-semibold select-none flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+              Paylaşımlı Ekran
+            </span>
+            <span className="text-white/10 select-none">|</span>
+            <input
+              value={inputUrl}
+              onChange={e => setInputUrl(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && navigateBrowser(inputUrl)}
+              className="flex-1 bg-transparent text-white/90 outline-none placeholder:text-white/30 text-xs md:text-sm font-medium"
+              placeholder="Google'da aratın veya film/makale linki yapıştırın..."
+            />
+          </div>
+
+          <button
+            onClick={() => navigateBrowser("https://www.google.com")}
+            className="text-xs text-indigo-400 hover:text-white bg-indigo-500/10 hover:bg-indigo-500 border border-indigo-500/30 px-3 py-2 rounded-xl transition-all font-semibold"
+          >
+            Ana Sayfa
+          </button>
+        </div>
+
+        {/* Real Web Proxy Iframe */}
+        <div className="flex-1 w-full h-full relative overflow-hidden bg-[#0c0c0e]">
+          <iframe
+            id="browser-iframe"
+            src={`${SOCKET_URL}/api/proxy?url=${encodeURIComponent(browserUrl)}`}
+            className="w-full h-full border-none"
+            sandbox="allow-same-origin allow-scripts allow-forms"
+          />
+        </div>
+      </div>
+
+      {/* ACTIVE REACTIONS OVERLAY */}
       <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden">
         {activeReactions.map(r => (
           <div key={r.id} className="reaction-pop drop-shadow-2xl">
@@ -312,7 +483,7 @@ export default function Room() {
       {/* SCREEN SHARE ERROR TOAST */}
       {screenShareError && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-red-900/90 text-white px-5 py-3 rounded-2xl text-sm border border-red-500/50 backdrop-blur-md max-w-xs text-center shadow-xl">
-          📵 {screenShareError}
+          提升 {screenShareError}
         </div>
       )}
 
@@ -326,33 +497,55 @@ export default function Room() {
         </div>
       )}
 
-      {/* FLOATING BUBBLE (YOUR CAMERA IN SCREEN SHARE, OR OPPONENT CAMERA IN NORMAL MODE) */}
-      {!isImmersive && (isScreenSharing ? remoteStream : stream) && (
+      {/* FLOATING DRAGGABLE BUBBLE 1: LOCAL WEBCAM */}
+      {!isImmersive && stream && (
         <div
-          className={`absolute z-20 overflow-hidden rounded-2xl border border-white/10 shadow-2xl backdrop-blur-md bg-black/40 transition-shadow ${isDragging ? "cursor-grabbing scale-105" : "cursor-grab hover:border-white/30"}`}
-          style={{ width: 160, height: 110, left: isDefaultPos ? "auto" : position.x, top: isDefaultPos ? "auto" : position.y, right: isDefaultPos ? 16 : "auto", bottom: isDefaultPos ? 100 : "auto", touchAction: "none" }}
-          onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp}
+          className={`absolute z-30 overflow-hidden rounded-2xl border border-white/10 shadow-2xl backdrop-blur-md bg-black/40 transition-shadow ${isDraggingLocal ? "cursor-grabbing scale-105" : "cursor-grab hover:border-white/30"}`}
+          style={{ width: 160, height: 110, left: localPos.x, top: localPos.y, touchAction: "none" }}
+          onPointerDown={handlePointerDownLocal} onPointerMove={handlePointerMoveLocal} onPointerUp={handlePointerUpLocal}
         >
           <video
-            ref={bubbleVideoRef}
+            ref={localVideoRef}
             autoPlay
             playsInline
             muted={true}
-            className="w-full h-full object-cover"
-            style={{ transform: (isScreenSharing || isRemoteScreenSharing) ? "none" : "scaleX(-1)" }}
+            className={`w-full h-full object-cover ${isVideoOff ? "opacity-0" : "opacity-100"}`}
+            style={{ transform: "scaleX(-1)" }}
           />
+          {isVideoOff && (
+            <div className="absolute inset-0 flex items-center justify-center bg-zinc-800">
+              <svg className="w-8 h-8 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                <line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
+              </svg>
+            </div>
+          )}
           <div className="absolute bottom-1.5 left-2 pointer-events-none">
-            <span className="bg-black/60 px-1.5 py-0.5 rounded text-[10px] font-medium border border-white/10">
-              {isScreenSharing ? "Arkadaşınız" : "Siz"}
-            </span>
+            <span className="bg-black/60 px-1.5 py-0.5 rounded text-[10px] font-medium border border-white/10">Siz</span>
           </div>
         </div>
       )}
 
-      {/* IN-APP VIDEO PLAYER */}
-      {showVideoPlayer && (
-        <VideoPlayer roomId={roomId} onClose={() => setShowVideoPlayer(false)} />
+      {/* FLOATING DRAGGABLE BUBBLE 2: REMOTE WEBCAM */}
+      {!isImmersive && remoteStream && (
+        <div
+          className={`absolute z-30 overflow-hidden rounded-2xl border border-white/10 shadow-2xl backdrop-blur-md bg-black/40 transition-shadow ${isDraggingRemote ? "cursor-grabbing scale-105" : "cursor-grab hover:border-white/30"}`}
+          style={{ width: 160, height: 110, left: remotePos.x, top: remotePos.y, touchAction: "none" }}
+          onPointerDown={handlePointerDownRemote} onPointerMove={handlePointerMoveRemote} onPointerUp={handlePointerUpRemote}
+        >
+          <video
+            ref={remoteVideoRef}
+            autoPlay
+            playsInline
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute bottom-1.5 left-2 pointer-events-none">
+            <span className="bg-black/60 px-1.5 py-0.5 rounded text-[10px] font-medium border border-white/10">Arkadaşınız</span>
+          </div>
+        </div>
       )}
+
+
 
       {/* REACTION PANEL */}
       {showReactionPanel && (
@@ -392,7 +585,7 @@ export default function Room() {
         </div>
       )}
 
-      {/* CONTROLS */}
+      {/* BAR CONTROLS */}
       {!isImmersive && (
         <div className="absolute bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 z-30 flex items-center justify-center gap-1.5 md:gap-3 bg-zinc-900/60 backdrop-blur-xl px-3 py-2 md:px-5 md:py-3 rounded-3xl border border-white/10 shadow-2xl max-w-[97vw] overflow-x-auto">
 
@@ -419,15 +612,7 @@ export default function Room() {
             </svg>
           </button>
 
-          <div className="w-px h-8 bg-white/10 mx-0.5" />
 
-          <button onClick={() => setShowVideoPlayer(v => !v)} title="Video Oynat / YouTube"
-            className={`${btnBase} ${showVideoPlayer ? "bg-purple-500 text-white" : "bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20"}`}>
-            <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </button>
 
           <button onClick={() => setShowReactionPanel(v => !v)} title="Reactions / GIF"
             className={`${btnBase} ${showReactionPanel ? "bg-indigo-500 text-white" : "bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20"}`}>

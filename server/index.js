@@ -147,6 +147,240 @@ app.get("/api/resolve", async (req, res) => {
   }
 });
 
+// Real-Time Google/DuckDuckGo Search Scraper
+app.get("/api/search", async (req, res) => {
+  const query = req.query.q;
+  if (!query || typeof query !== "string") {
+    return res.status(400).json({ error: "Missing q parameter" });
+  }
+
+  try {
+    console.log(`[Search Resolver] Searching for: ${query}`);
+    const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+    
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7"
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch results from search engine`);
+    }
+
+    const html = await response.text();
+    const regex = /<a[^>]*class="result__a"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+    const results = [];
+    let match;
+
+    while ((match = regex.exec(html)) !== null) {
+      let rawUrl = match[1];
+      if (rawUrl.includes("uddg=")) {
+        const fullUrlStr = rawUrl.startsWith("//") ? "https:" + rawUrl : "https://duckduckgo.com" + rawUrl;
+        const u = new URL(fullUrlStr);
+        rawUrl = decodeURIComponent(u.searchParams.get("uddg") || "");
+      }
+
+      const title = match[2].replace(/<[^>]*>/g, "").trim();
+      
+      // Extract snippet
+      const postHtml = html.slice(regex.lastIndex, regex.lastIndex + 1200);
+      const snippetMatch = postHtml.match(/<a[^>]*class="result__snippet"[^>]*>([\s\S]*?)<\/a>/i);
+      const snippet = snippetMatch ? snippetMatch[1].replace(/<[^>]*>/g, "").trim() : "";
+
+      if (rawUrl.startsWith("http")) {
+        results.push({ title, url: rawUrl, snippet });
+      }
+    }
+
+    return res.json(results.slice(0, 10));
+  } catch (error) {
+    console.error("[Search Resolver] Error:", error);
+    return res.status(500).json({ error: "Arama sırasında bir sunucu hatası oluştu." });
+  }
+});
+
+// Real-Time Web Proxy for Interactive Co-Browsing
+app.get("/api/proxy", async (req, res) => {
+  let targetUrl = req.query.url;
+  if (!targetUrl || typeof targetUrl !== "string") {
+    return res.status(400).send("Gecersiz veya eksik URL parametresi.");
+  }
+
+  // Set default scheme if missing
+  if (!/^https?:\/\//i.test(targetUrl)) {
+    targetUrl = "https://" + targetUrl;
+  }
+
+  try {
+    console.log(`[Web Proxy] Loading target: ${targetUrl}`);
+    const response = await fetch(targetUrl, {
+      headers: {
+        // High fidelity iPhone mobile user agent so Google and video sites load beautifully tailored for touch & mobile!
+        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7"
+      }
+    });
+
+    const html = await response.text();
+
+    // Remove CSP and X-Frame-Options tags inside the HTML to bypass iframe blocking completely
+    let cleanedHtml = html.replace(/<meta[^>]*http-equiv="?content-security-policy"?[^>]*>/gi, "");
+    cleanedHtml = cleanedHtml.replace(/<meta[^>]*http-equiv="?x-frame-options"?[^>]*>/gi, "");
+
+    // Inject base href tag so that images, stylesheets, scripts and fonts load directly from original server
+    const urlObj = new URL(targetUrl);
+    const baseTag = `<base href="${urlObj.protocol}//${urlObj.host}${urlObj.pathname}">`;
+
+    if (cleanedHtml.includes("<head>")) {
+      cleanedHtml = cleanedHtml.replace("<head>", `<head>${baseTag}`);
+    } else if (cleanedHtml.includes("<html>")) {
+      cleanedHtml = cleanedHtml.replace("<html>", `<html><head>${baseTag}</head>`);
+    } else {
+      cleanedHtml = baseTag + cleanedHtml;
+    }
+
+    // Injected navigation, scrolling, and HTML5 video synchronization script
+    const syncScript = `
+      <script>
+        (function() {
+          console.log("[Co-Browsing Proxy] Injected synchronization scripts.");
+
+          // Helper to get absolute URLs
+          function getAbsoluteUrl(href) {
+            try {
+              return new URL(href, window.location.href).href;
+            } catch(e) {
+              return href;
+            }
+          }
+
+          // Intercept all link clicks (keep navigation in proxy)
+          document.addEventListener('click', function(e) {
+            var link = e.target.closest('a');
+            if (link && link.href) {
+              e.preventDefault();
+              var absolute = getAbsoluteUrl(link.getAttribute('href') || link.href);
+              window.parent.postMessage({ type: 'iframe-navigate', url: absolute }, '*');
+            }
+          }, true);
+
+          // Intercept form submissions (e.g. Google Search form submission)
+          document.addEventListener('submit', function(e) {
+            var form = e.target;
+            e.preventDefault();
+            
+            var action = getAbsoluteUrl(form.getAttribute('action') || form.action || window.location.href);
+            var url = new URL(action);
+            
+            var formData = new FormData(form);
+            var params = new URLSearchParams();
+            for (var pair of formData.entries()) {
+              params.append(pair[0], pair[1]);
+            }
+            
+            var separator = url.search ? '&' : '?';
+            var targetUrl = url.protocol + '//' + url.host + url.pathname + url.search + separator + params.toString();
+            window.parent.postMessage({ type: 'iframe-navigate', url: targetUrl }, '*');
+          }, true);
+
+          // Sync Scroll events
+          var isSyncingScroll = false;
+          window.addEventListener('scroll', function() {
+            if (isSyncingScroll) return;
+            window.parent.postMessage({
+              type: 'iframe-scroll',
+              scrollX: window.scrollX,
+              scrollY: window.scrollY
+            }, '*');
+          });
+
+          // Sync HTML5 Video controls inside target site
+          var syncingVideo = false;
+          setInterval(function() {
+            var videos = document.querySelectorAll('video');
+            videos.forEach(function(vid) {
+              if (!vid.dataset.hasSync) {
+                vid.dataset.hasSync = 'true';
+                
+                vid.addEventListener('play', function() {
+                  if (syncingVideo) return;
+                  window.parent.postMessage({ type: 'iframe-video', action: 'play', time: vid.currentTime }, '*');
+                });
+                
+                vid.addEventListener('pause', function() {
+                  if (syncingVideo) return;
+                  window.parent.postMessage({ type: 'iframe-video', action: 'pause', time: vid.currentTime }, '*');
+                });
+                
+                vid.addEventListener('seeked', function() {
+                  if (syncingVideo) return;
+                  window.parent.postMessage({ type: 'iframe-video', action: 'seek', time: vid.currentTime }, '*');
+                });
+              }
+            });
+          }, 1000);
+
+          // Listen to synchronization events from parent
+          window.addEventListener('message', function(e) {
+            if (!e.data || typeof e.data !== 'object') return;
+
+            if (e.data.type === 'sync-scroll') {
+              isSyncingScroll = true;
+              window.scrollTo(e.data.scrollX, e.data.scrollY);
+              setTimeout(function() { isSyncingScroll = false; }, 80);
+            }
+
+            if (e.data.type === 'sync-video') {
+              var videos = document.querySelectorAll('video');
+              videos.forEach(function(vid) {
+                syncingVideo = true;
+                vid.currentTime = e.data.time;
+                if (e.data.action === 'play') {
+                  vid.play().catch(function(){});
+                } else if (e.data.action === 'pause') {
+                  vid.pause();
+                }
+                setTimeout(function() { syncingVideo = false; }, 150);
+              });
+            }
+          });
+        })();
+      </script>
+    `;
+
+    let finalHtml = cleanedHtml;
+    if (finalHtml.includes("</body>")) {
+      finalHtml = finalHtml.replace("</body>", `${syncScript}</body>`);
+    } else {
+      finalHtml = finalHtml + syncScript;
+    }
+
+    // Set mobile responsive & secure headers
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.removeHeader("X-Frame-Options");
+    res.removeHeader("Content-Security-Policy");
+    return res.send(finalHtml);
+
+  } catch (error) {
+    console.error(`[Web Proxy] Error proxying ${targetUrl}:`, error);
+    return res.status(500).send(`
+      <html>
+        <body style="background:#0f0f11;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+          <div style="text-align:center;padding:20px;">
+            <h3 style="color:#ef4444;margin-bottom:8px;">Sayfa Yüklenemedi</h3>
+            <p style="color:#a1a1aa;font-size:13px;margin-bottom:16px;">Girdiğiniz adres veya Google arama sayfası yüklenemedi.</p>
+            <p style="color:#52525b;font-size:11px;">URL: ${targetUrl}</p>
+          </div>
+        </body>
+      </html>
+    `);
+  }
+});
+
 const server = http.createServer(app);
 
 // ---------------------------------------------------------------------------
@@ -253,6 +487,20 @@ io.on("connection", (socket) => {
 
   socket.on("screen-share-state", ({ roomId, active }) => {
     socket.to(roomId).emit("screen-share-state", { active });
+  });
+
+  socket.on("browser-navigate", ({ roomId, url }) => {
+    console.log(`[Socket] browser-navigate: ${url}`);
+    socket.to(roomId).emit("browser-navigate", { url });
+  });
+
+  socket.on("browser-scroll", ({ roomId, scrollX, scrollY }) => {
+    socket.to(roomId).emit("browser-scroll", { scrollX, scrollY });
+  });
+
+  socket.on("browser-video", ({ roomId, action, time }) => {
+    console.log(`[Socket] browser-video: ${action} at ${time}`);
+    socket.to(roomId).emit("browser-video", { action, time });
   });
 
   // ── DISCONNECT ────────────────────────────────────────────────────────────

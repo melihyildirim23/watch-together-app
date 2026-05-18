@@ -8,14 +8,14 @@ const getYoutubeId = (url: string) => {
   return m ? m[1] : null;
 };
 
-type Props = { roomId: string; onClose: () => void };
+type Props = { roomId: string; initialUrl?: string | null; onClose: () => void };
 
 type PlayerSource = {
   type: "direct" | "iframe";
   url: string;
 };
 
-export default function VideoPlayer({ roomId, onClose }: Props) {
+export default function VideoPlayer({ roomId, initialUrl, onClose }: Props) {
   const [source, setSource] = useState<PlayerSource | null>(null);
   const [inputVal, setInputVal] = useState("");
   const [isResolving, setIsResolving] = useState(false);
@@ -57,6 +57,13 @@ export default function VideoPlayer({ roomId, onClose }: Props) {
       setIsResolving(false);
     }
   };
+
+  // Automatically resolve initialUrl if passed
+  useEffect(() => {
+    if (initialUrl) {
+      submitUrl(initialUrl);
+    }
+  }, [initialUrl]);
 
   // Socket Listener for synchronized player events
   useEffect(() => {
