@@ -457,12 +457,12 @@ export default function Room() {
               onChange={e => setInputUrl(e.target.value)}
               onKeyDown={e => e.key === "Enter" && navigateBrowser(inputUrl)}
               className="flex-1 bg-transparent text-white/90 outline-none placeholder:text-white/30 text-xs md:text-sm font-medium"
-              placeholder="Google'da aratın veya film/makale linki yapıştırın..."
+              placeholder="Film aratın veya direkt film/makale linki yapıştırın..."
             />
           </div>
 
           <button
-            onClick={() => navigateBrowser("https://www.google.com")}
+            onClick={() => navigateBrowser("https://html.duckduckgo.com")}
             className="text-xs text-indigo-400 hover:text-white bg-indigo-500/10 hover:bg-indigo-500 border border-indigo-500/30 px-3 py-2 rounded-xl transition-all font-semibold"
           >
             Ana Sayfa
