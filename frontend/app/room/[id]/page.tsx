@@ -80,6 +80,7 @@ export default function Room() {
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isImmersive, setIsImmersive] = useState(false);
+  const [videoFit, setVideoFit] = useState<"contain" | "cover" | "stretch">("contain");
   const [showReactionPanel, setShowReactionPanel] = useState(false);
   const [reactionTab, setReactionTab] = useState<"emoji" | "gif">("emoji");
   const [activeReactions, setActiveReactions] = useState<ReactionItem[]>([]);
@@ -503,6 +504,20 @@ export default function Room() {
           100% { transform: translate(-50%,-60%) scale(0.85); opacity:0; }
         }
         .reaction-pop { animation: popInFadeOut 3.5s forwards; position:absolute; left:50%; top:50%; }
+
+        /* iPhone notch & safe-area-inset cover */
+        @viewport { viewport-fit: cover; }
+
+        /* Dynamic screen crop and fit system for Bulut PC (Hyperbeam) & iframe */
+        #hyperbeam-container-el video,
+        #hyperbeam-container-el iframe,
+        #browser-iframe {
+          object-fit: ${videoFit === "cover" ? "cover" : videoFit === "stretch" ? "fill" : "contain"} !important;
+          transform: ${videoFit === "cover" ? "scale(1.18)" : "scale(1)"} !important;
+          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), object-fit 0.3s ease !important;
+          width: 100% !important;
+          height: 100% !important;
+        }
       `}} />
 
       {/* REAL-TIME CO-BROWSING INTERACTIVE BROWSER */}
@@ -630,6 +645,7 @@ export default function Room() {
         <div className="flex-1 w-full h-full relative overflow-hidden bg-[#0c0c0e]">
           {hyperbeamActive && hyperbeamEmbedUrl ? (
             <div
+              id="hyperbeam-container-el"
               ref={hyperbeamContainerRef}
               className="w-full h-full bg-black relative"
             />
@@ -643,6 +659,8 @@ export default function Room() {
               }
               className="w-full h-full border-none"
               sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+              allow="autoplay; encrypted-media; fullscreen; microphone; camera; display-capture;"
+              allowFullScreen={true}
             />
           )}
         </div>
@@ -850,6 +868,21 @@ export default function Room() {
                 : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
               }
             </svg>
+          </button>
+
+          {/* Aspect-Ratio Screen Fit Toggle for mobile black-bars removal */}
+          <button
+            onClick={() => setVideoFit(v => v === "contain" ? "cover" : v === "cover" ? "stretch" : "contain")}
+            title={`Ekran Sığdırma: ${videoFit === "contain" ? "Orjinal (Şeritli)" : videoFit === "cover" ? "Ekranı Kapla (Doldur)" : "Sığdır (Uzat)"}`}
+            className={`relative ${btnBase} ${videoFit !== "contain" ? "bg-pink-500/20 text-pink-400 border border-pink-500/50" : "bg-white/10 text-white border border-transparent"}`}
+          >
+            <svg className="w-5 h-5 md:w-6 md:h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M4 8V7a3 3 0 013-3h10a3 3 0 013 3v1" />
+              <rect x="6" y="8" width="12" height="8" rx="1" stroke="currentColor" strokeWidth={1.5} fill="none" />
+            </svg>
+            <span className="text-[8px] absolute -bottom-1.5 bg-black px-1 rounded-full border border-white/10 scale-90 whitespace-nowrap font-bold text-white shadow-md">
+              {videoFit === "contain" ? "Orjinal" : videoFit === "cover" ? "Doldur" : "Sığdır"}
+            </span>
           </button>
 
           <div className="w-px h-8 bg-white/10 mx-0.5" />
