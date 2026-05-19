@@ -456,21 +456,7 @@ export default function Room() {
   }, []);
 
   const toggleFullscreen = async () => {
-    // 1. iOS Safari webkitEnterFullscreen fallback for video elements
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    if (isIOS && hyperbeamActive && hyperbeamContainerRef.current) {
-      const videoEl = hyperbeamContainerRef.current.querySelector("video");
-      if (videoEl && (videoEl as any).webkitEnterFullscreen) {
-        try {
-          (videoEl as any).webkitEnterFullscreen();
-          return;
-        } catch (e) {
-          console.error("[Fullscreen] iOS video webkitEnterFullscreen failed:", e);
-        }
-      }
-    }
-
-    // 2. Standard Fullscreen API with Webkit/Safari fallbacks
+    // Standard Fullscreen API with Webkit/Safari fallbacks for non-iOS / generic fallback
     const docEl = document.documentElement as any;
     const doc = document as any;
 
@@ -487,6 +473,68 @@ export default function Room() {
         doc.webkitExitFullscreen();
       }
     }
+  };
+
+  const handleFullscreenClick = (e: React.MouseEvent) => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isIOS) {
+      // Direct, synchronous iOS webkitEnterFullscreen trigger inside light and shadow DOMs
+      const container = document.getElementById("hyperbeam-container-el");
+      
+      const findVideoSync = (el: HTMLElement | null): HTMLVideoElement | null => {
+        if (!el) return null;
+        if (el.tagName === "VIDEO") return el as HTMLVideoElement;
+        if (el.shadowRoot) {
+          const found = findVideoSync(el.shadowRoot as any);
+          if (found) return found;
+        }
+        for (let i = 0; i < el.childNodes.length; i++) {
+          const child = el.childNodes[i];
+          if (child.nodeType === Node.ELEMENT_NODE) {
+            const found = findVideoSync(child as HTMLElement);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+
+      // 1. Try Bulut PC video (in Shadow DOM)
+      if (hyperbeamActive && container) {
+        const video = findVideoSync(container);
+        if (video && (video as any).webkitEnterFullscreen) {
+          try {
+            (video as any).webkitEnterFullscreen();
+            return;
+          } catch (err) {
+            console.error("[Sync iOS Fullscreen] Hyperbeam failed:", err);
+          }
+        }
+      }
+
+      // 2. Try Webrtc remote stream video
+      if (remoteVideoRef.current && (remoteVideoRef.current as any).webkitEnterFullscreen) {
+        try {
+          (remoteVideoRef.current as any).webkitEnterFullscreen();
+          return;
+        } catch (err) {
+          console.error("[Sync iOS Fullscreen] Remote video failed:", err);
+        }
+      }
+
+      // 3. Try any visible video in document
+      const anyVideo = findVideoSync(document.body);
+      if (anyVideo && (anyVideo as any).webkitEnterFullscreen) {
+        try {
+          (anyVideo as any).webkitEnterFullscreen();
+          return;
+        } catch (err) {
+          console.error("[Sync iOS Fullscreen] General video failed:", err);
+        }
+      }
+    }
+
+    // Call standard fullscreen for non-iOS
+    toggleFullscreen();
   };
 
   const btnBase = "flex-shrink-0 p-3 md:p-4 rounded-full transition-all duration-300 shadow-lg flex items-center justify-center select-none cursor-pointer active:scale-95 touch-manipulation";
@@ -861,7 +909,7 @@ export default function Room() {
             </svg>
           </button>
 
-          <button onClick={toggleFullscreen} title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"} className={btnGhost}>
+          <button onClick={handleFullscreenClick} title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"} className={btnGhost}>
             <svg className="w-5 h-5 md:w-6 md:h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               {isFullscreen
                 ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
