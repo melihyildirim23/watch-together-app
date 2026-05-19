@@ -442,21 +442,57 @@ export default function Room() {
   }, [showReaction]);
 
   useEffect(() => {
-    const fn = () => setIsFullscreen(!!document.fullscreenElement);
+    const fn = () => {
+      const doc = document as any;
+      setIsFullscreen(!!(doc.fullscreenElement || doc.webkitFullscreenElement));
+    };
     document.addEventListener("fullscreenchange", fn);
-    return () => document.removeEventListener("fullscreenchange", fn);
+    document.addEventListener("webkitfullscreenchange", fn);
+    return () => {
+      document.removeEventListener("fullscreenchange", fn);
+      document.removeEventListener("webkitfullscreenchange", fn);
+    };
   }, []);
 
   const toggleFullscreen = async () => {
-    if (!document.fullscreenElement) await document.documentElement.requestFullscreen().catch(() => {});
-    else await document.exitFullscreen().catch(() => {});
+    // 1. iOS Safari webkitEnterFullscreen fallback for video elements
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isIOS && hyperbeamActive && hyperbeamContainerRef.current) {
+      const videoEl = hyperbeamContainerRef.current.querySelector("video");
+      if (videoEl && (videoEl as any).webkitEnterFullscreen) {
+        try {
+          (videoEl as any).webkitEnterFullscreen();
+          return;
+        } catch (e) {
+          console.error("[Fullscreen] iOS video webkitEnterFullscreen failed:", e);
+        }
+      }
+    }
+
+    // 2. Standard Fullscreen API with Webkit/Safari fallbacks
+    const docEl = document.documentElement as any;
+    const doc = document as any;
+
+    if (!doc.fullscreenElement && !doc.webkitFullscreenElement) {
+      if (docEl.requestFullscreen) {
+        await docEl.requestFullscreen().catch(() => {});
+      } else if (docEl.webkitRequestFullscreen) {
+        docEl.webkitRequestFullscreen();
+      }
+    } else {
+      if (doc.exitFullscreen) {
+        await doc.exitFullscreen().catch(() => {});
+      } else if (doc.webkitExitFullscreen) {
+        doc.webkitExitFullscreen();
+      }
+    }
   };
 
   const btnBase = "flex-shrink-0 p-3 md:p-4 rounded-full transition-all duration-300 shadow-lg flex items-center justify-center select-none cursor-pointer active:scale-95 touch-manipulation";
   const btnGhost = `${btnBase} bg-white/10 text-white border border-transparent hover:bg-white/20 active:bg-white/30`;
 
   return (
-    <div className="w-screen h-screen bg-[#0f0f11] relative overflow-hidden flex items-center justify-center font-sans text-white">
+    <div className="w-screen h-[100dvh] bg-[#0f0f11] relative overflow-hidden flex items-center justify-center font-sans text-white">
 
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes popInFadeOut {
