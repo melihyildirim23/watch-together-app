@@ -811,6 +811,11 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("camera-state", rest);
   });
 
+  socket.on("mic-state", (payload) => {
+    const { roomId, ...rest } = payload;
+    socket.to(roomId).emit("mic-state", rest);
+  });
+
   socket.on("video-url", ({ roomId, url }) => {
     socket.to(roomId).emit("video-url", { url });
   });

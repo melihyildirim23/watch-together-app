@@ -37,6 +37,7 @@ export const useWebRTC = (roomId: string) => {
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
+  const [isRemoteMuted, setIsRemoteMuted] = useState(false);
   const [isRemoteVideoOff, setIsRemoteVideoOff] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [peerConnected, setPeerConnected] = useState(false);
@@ -158,8 +159,12 @@ export const useWebRTC = (roomId: string) => {
           peer.on("connect", () => {
             console.log("[WebRTC] PEER CONNECTED");
             setPeerConnected(true);
-            // Send current camera state to remote peer
-            socket.emit("camera-state", { roomId, enabled: !isVideoOff });
+            // Query actual tracks from current stream to ensure fresh state synchronization
+            const currentStream = streamRef.current;
+            const isCamEnabled = currentStream ? (currentStream.getVideoTracks()[0]?.enabled !== false) : true;
+            const isMicEnabled = currentStream ? (currentStream.getAudioTracks()[0]?.enabled !== false) : true;
+            socket.emit("camera-state", { roomId, enabled: isCamEnabled });
+            socket.emit("mic-state", { roomId, enabled: isMicEnabled });
           });
           peer.on("close", () => { isPeerActive.current = false; setPeerConnected(false); });
           peer.on("error", (err: Error) => { console.error("[WebRTC] Peer error:", err); });
@@ -189,10 +194,16 @@ export const useWebRTC = (roomId: string) => {
           setIsRemoteVideoOff(!enabled);
         });
 
+        socket.on("mic-state", ({ enabled }: { enabled: boolean }) => {
+          console.log("[WebRTC] Remote mic state changed:", enabled);
+          setIsRemoteMuted(!enabled);
+        });
+
         socket.on("peer-disconnected", () => {
           setRemoteStream(null);
           setPeerConnected(false);
           setIsRemoteVideoOff(false);
+          setIsRemoteMuted(false);
         });
 
         console.log("[WebRTC] JOIN REQUEST SENT");
@@ -218,6 +229,7 @@ export const useWebRTC = (roomId: string) => {
       isPeerActive.current = false;
       setPeerConnected(false);
       setIsRemoteVideoOff(false);
+      setIsRemoteMuted(false);
       if (peerRef.current) {
         try { if (!peerRef.current.destroyed) peerRef.current.destroy(); } catch (err) { console.warn("[WebRTC] Peer destroy error:", err); }
         peerRef.current = null;
@@ -238,8 +250,12 @@ export const useWebRTC = (roomId: string) => {
   const toggleMute = useCallback(() => {
     if (!stream) return;
     const track = stream.getAudioTracks()[0];
-    if (track) { track.enabled = !track.enabled; setIsMuted(!track.enabled); }
-  }, [stream]);
+    if (track) {
+      track.enabled = !track.enabled;
+      setIsMuted(!track.enabled);
+      socket.emit("mic-state", { roomId, enabled: !track.enabled });
+    }
+  }, [stream, roomId]);
 
   const toggleVideo = useCallback(() => {
     if (!stream) return;
@@ -292,6 +308,12 @@ export const useWebRTC = (roomId: string) => {
   // ---------------------------------------------------------------------------
   const shareScreen = useCallback(async () => {
     if (isScreenSharing) { await stopScreenShare(); return; }
+
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      alert("Ekran paylaşımı mobil cihazlarda desteklenmemektedir.");
+      return;
+    }
 
     try {
       console.log("[WebRTC] Requesting display media...");
@@ -392,17 +414,13 @@ export const useWebRTC = (roomId: string) => {
     }
   }, [isTabSharing, stream, safePeer]);
 
-  const [showMobileGuide, setShowMobileGuide] = useState(false);
-
   const shareBrowserTab = useCallback(async () => {
     if (isTabSharing) { await stopTabShare(); return; }
     setScreenShareError(null);
 
-    // Mobile devices (Android/iOS) don't support getDisplayMedia.
-    // Show a native screen-recording guide instead of throwing an error.
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     if (isMobile) {
-      setShowMobileGuide(true);
+      alert("Ekran paylaşımı mobil cihazlarda desteklenmemektedir.");
       return;
     }
 
@@ -473,12 +491,11 @@ export const useWebRTC = (roomId: string) => {
     shareBrowserTab,
     isMuted,
     isVideoOff,
+    isRemoteMuted,
     isRemoteVideoOff,
     isScreenSharing,
     isTabSharing,
     peerConnected,
     screenShareError,
-    showMobileGuide,
-    setShowMobileGuide,
   };
 };

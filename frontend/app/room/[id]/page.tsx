@@ -648,27 +648,10 @@ export default function Room() {
         }
       }
 
-      // 3. Try any visible video in document
-      const anyVideo = findVideoSync(document.body);
-      if (anyVideo && (anyVideo as any).webkitEnterFullscreen) {
-        try {
-          (anyVideo as any).webkitEnterFullscreen();
-          return;
-        } catch (err) {
-          console.error("[Sync iOS Fullscreen] General video failed:", err);
-        }
-      }
-    }
-
-    // Call standard fullscreen for non-iOS
-    toggleFullscreen();
-  };
-
-  const btnBase = "flex-shrink-0 p-3 md:p-4 rounded-full transition-all duration-300 shadow-lg flex items-center justify-center select-none cursor-pointer active:scale-95 touch-manipulation";
-  const btnGhost = `${btnBase} bg-white/10 text-white border border-transparent hover:bg-white/20 active:bg-white/30`;
-
-  return (
-    <div className="w-screen h-[100dvh] bg-[#0f0f11] relative overflow-hidden flex items-center justify-center font-sans text-white">
+    return (
+    <div className={`w-screen h-[100dvh] bg-[#0f0f11] relative overflow-hidden flex font-sans text-white ${
+      webcamLayout === "split" && !hideCameras ? "flex-col md:flex-row" : "items-center justify-center"
+    }`}>
 
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes popInFadeOut {
@@ -695,11 +678,23 @@ export default function Room() {
         }
       `}} />
 
-      {/* REAL-TIME CO-BROWSING INTERACTIVE BROWSER */}
-      <div className="absolute inset-0 w-full h-full bg-[#0a0a0c] flex flex-col z-0">
+      {/* TOAST NOTIFICATION */}
+      {toastMessage && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[100] bg-zinc-900/90 text-white px-5 py-3 rounded-full text-xs font-semibold border border-white/10 backdrop-blur-md shadow-2xl flex items-center gap-2 animate-bounce">
+          <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse" />
+          {toastMessage}
+        </div>
+      )}
+
+      {/* MAIN CONTENT AREA */}
+      <div className={`relative flex flex-col bg-[#0a0a0c] transition-all duration-500 h-full ${
+        webcamLayout === "split" && !hideCameras
+          ? "w-full h-[50vh] md:w-1/2 md:h-full border-b md:border-b-0 md:border-r border-white/5"
+          : "absolute inset-0 w-full h-full z-0"
+      }`}>
         
         {/* Sleek Browser Navigation Top Bar / Hyperbeam Minimalism */}
-        {!isImmersive && (
+        {!hideControls && (
           hyperbeamActive ? (
             <div className="w-full bg-[#121215]/90 border-b border-white/5 px-4 py-2.5 flex items-center justify-between shadow-xl z-20 backdrop-blur-md mt-14 md:mt-0">
               <div className="flex items-center gap-3">
@@ -839,7 +834,307 @@ export default function Room() {
             />
           )}
         </div>
+
+        {/* REACTION PANEL */}
+        {showReactionPanel && (
+          <div className="absolute bottom-24 md:bottom-28 left-1/2 -translate-x-1/2 z-40 bg-zinc-900/95 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl overflow-hidden w-[94vw] sm:w-[420px]">
+            <div className="flex border-b border-white/10">
+              {(["emoji", "gif"] as const).map(tab => (
+                <button key={tab} onClick={() => setReactionTab(tab)}
+                  className={`flex-1 py-3 text-sm font-semibold uppercase tracking-wide transition-colors ${reactionTab === tab ? "text-indigo-400 border-b-2 border-indigo-400" : "text-white/40 hover:text-white/70"}`}>
+                  {tab === "emoji" ? "😀 Emoji" : "🎬 GIF"}
+                </button>
+              ))}
+              <button onClick={() => setShowReactionPanel(false)} className="px-4 text-white/40 hover:text-white/80 text-xl leading-none pb-0.5">✕</button>
+            </div>
+
+            {reactionTab === "emoji" && (
+              <div className="grid grid-cols-6 gap-0.5 p-3 max-h-56 overflow-y-auto">
+                {QUICK_EMOJIS.map(e => (
+                  <button key={e} onClick={() => sendReaction("emoji", e)}
+                    className="text-2xl md:text-3xl p-1.5 rounded-xl hover:bg-white/10 active:scale-110 transition-transform text-center">
+                    {e}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {reactionTab === "gif" && (
+              <div className="grid grid-cols-4 gap-2 p-3 max-h-64 overflow-y-auto">
+                {GIFS.map(g => {
+                  const url = getGifUrl(g.id);
+                  return (
+                    <button key={g.id} onClick={() => sendReaction("gif", url)}
+                      className="relative rounded-xl overflow-hidden aspect-square bg-zinc-800 hover:ring-2 hover:ring-indigo-400 active:scale-95 transition-all">
+                      <img src={url} alt={g.label} className="w-full h-full object-cover" loading="lazy" referrerPolicy="no-referrer" />
+                      <span className="absolute bottom-0.5 right-1 text-xs">{g.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* BAR CONTROLS */}
+        {!hideControls && (
+          <div className="absolute bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-2 w-[96vw] md:w-auto" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+            {/* Row 1 — always visible core buttons */}
+            <div className="flex items-center justify-center gap-1.5 md:gap-3 bg-zinc-900/60 backdrop-blur-xl px-3 py-2 md:px-5 md:py-3 rounded-3xl border border-white/10 shadow-2xl w-full md:w-auto">
+
+              <button onClick={toggleMute} title={isMuted ? "Sesi Aç" : "Sesi Kapat"}
+                className={`${btnBase} ${isMuted ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 border border-red-500/50" : "bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20"}`}>
+                <svg className="w-5 h-5 md:w-6 md:h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  {isMuted && <line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />}
+                </svg>
+              </button>
+
+              <button onClick={toggleVideo} title={isVideoOff ? "Kamerayı Aç" : "Kamerayı Kapat"}
+                className={`${btnBase} ${isVideoOff ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 border border-red-500/50" : "bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20"}`}>
+                <svg className="w-5 h-5 md:w-6 md:h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  {isVideoOff && <line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />}
+                </svg>
+              </button>
+
+              <button onClick={() => setHideCameras(v => !v)} title={hideCameras ? "Kameraları Göster" : "Kameraları Gizle"}
+                className={`${btnBase} ${hideCameras ? "bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 border border-amber-500/50" : "bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20"}`}>
+                <svg className="w-5 h-5 md:w-6 md:h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  {hideCameras ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  )}
+                </svg>
+              </button>
+
+              <button onClick={() => setWebcamLayout(v => v === "floating" ? "split" : "floating")} title={webcamLayout === "split" ? "Yüzen Düzen (Floating)" : "Ekranı Böl (Split Screen)"}
+                className={`${btnBase} ${webcamLayout === "split" ? "bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 border border-indigo-500/50" : "bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20"}`}>
+                <svg className="w-5 h-5 md:w-6 md:h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+              </button>
+
+              <button onClick={() => setShowReactionPanel(v => !v)} title="Tepkiler / GIF"
+                className={`${btnBase} ${showReactionPanel ? "bg-indigo-500 text-white" : "bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20"}`}>
+                <svg className="w-5 h-5 md:w-6 md:h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+
+              <button onClick={() => setHideControls(true)} title="Kontrolleri Gizle" className={btnGhost}>
+                <svg className="w-5 h-5 md:w-6 md:h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                </svg>
+              </button>
+
+              <button onClick={handleFullscreenClick} title={isFullscreen ? "Tam Ekrandan Çık" : "Tam Ekran"} className={btnGhost}>
+                <svg className="w-5 h-5 md:w-6 md:h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  {isFullscreen
+                    ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                  }
+                </svg>
+              </button>
+
+              <div className="w-px h-8 bg-white/10 mx-0.5" />
+
+              <button onClick={() => { if (stream) stream.getTracks().forEach(t => { try { t.stop(); } catch {} }); router.push("/"); }}
+                className={`${btnBase} bg-red-600 text-white hover:bg-red-700 border border-red-500 shadow-red-600/30`} title="Odadan Çık">
+                <svg className="w-5 h-5 md:w-6 md:h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ transform: "rotate(180deg)" }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </button>
+
+            </div>{/* end row 1 */}
+
+            {/* Row 2 — secondary buttons (Hidden on Mobile) */}
+            {!isMobile && (
+              <div className="flex items-center justify-center flex-wrap gap-1.5 md:gap-2 bg-zinc-900/50 backdrop-blur-xl px-3 py-2 rounded-2xl border border-white/8 shadow-xl w-full md:w-auto">
+
+                <button onClick={shareScreen} title={isScreenSharing ? "Paylaşımı Durdur" : "Ekranı Paylaş"}
+                  className={`${btnBase} ${isScreenSharing ? "bg-indigo-500 text-white hover:bg-indigo-600 shadow-indigo-500/30" : "bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20"}`}>
+                  <svg className="w-5 h-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <span className="text-[10px] ml-1 whitespace-nowrap font-semibold hidden sm:inline">{isScreenSharing ? "⏹ Durdur" : "Ekran"}</span>
+                </button>
+
+                <button
+                  onClick={shareBrowserTab}
+                  title={isTabSharing ? "Sekme Paylaşımını Durdur" : "Bu Sekmeyi Sesli Paylaş"}
+                  className={`${btnBase} gap-1 px-2 text-sm font-semibold ${
+                    isTabSharing
+                      ? "bg-purple-600 text-white hover:bg-purple-700 border border-purple-400/50"
+                      : "bg-purple-500/20 text-purple-300 hover:bg-purple-500/40 border border-purple-500/30"
+                  }`}
+                >
+                  <svg className="w-5 h-5 flex-shrink-0 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 8l2 2 4-4" />
+                  </svg>
+                  <span className="text-[10px] whitespace-nowrap font-semibold">{isTabSharing ? "⏹ Durdur" : "📺 Sekme+Ses"}</span>
+                </button>
+
+                <button
+                  onClick={handleHyperbeamClick}
+                  title={hyperbeamActive ? "Bulut Tarayıcıyı Sonlandır" : "Sanal Bulut PC Başlat"}
+                  className={`${btnBase} gap-1 px-2 text-sm font-semibold ${
+                    hyperbeamActive
+                      ? "bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-rose-500/30 border border-rose-400/50 animate-pulse"
+                      : "bg-gradient-to-r from-pink-500/20 to-rose-500/20 text-pink-300 hover:from-pink-500/40 hover:to-rose-500/40 border border-pink-500/30"
+                  }`}
+                >
+                  <svg className="w-5 h-5 flex-shrink-0 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                  <span className="text-[10px] whitespace-nowrap font-semibold">{hyperbeamActive ? "⏹ Bulut Kapat" : "☁️ Bulut PC"}</span>
+                </button>
+
+                <button
+                  onClick={() => setVideoFit(v => v === "contain" ? "cover" : v === "cover" ? "stretch" : "contain")}
+                  title={`Ekran Sığdırma: ${videoFit === "contain" ? "Orjinal" : videoFit === "cover" ? "Doldur" : "Sığdır"}`}
+                  className={`relative ${btnBase} gap-1 px-2 ${videoFit !== "contain" ? "bg-pink-500/20 text-pink-400 border border-pink-500/50" : "bg-white/10 text-white border border-transparent"}`}
+                >
+                  <svg className="w-5 h-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M4 8V7a3 3 0 013-3h10a3 3 0 013 3v1" />
+                    <rect x="6" y="8" width="12" height="8" rx="1" stroke="currentColor" strokeWidth={1.5} fill="none" />
+                  </svg>
+                  <span className="text-[10px] whitespace-nowrap font-semibold">
+                    {videoFit === "contain" ? "Orjinal" : videoFit === "cover" ? "Doldur" : "Sığdır"}
+                  </span>
+                </button>
+
+              </div>
+            )}
+            {/* end row 2 */}
+
+          </div>
+        )}
       </div>
+
+      {/* SPLIT WEBCAMS CONTAINER (Right 50% on Desktop, Bottom 50% on Mobile) */}
+      {webcamLayout === "split" && !hideCameras && (
+        <div className="w-full h-[50vh] md:w-1/2 md:h-full flex flex-row md:flex-col bg-[#070709] transition-all duration-500 select-none">
+          {/* Remote Webcam Pane */}
+          <div className="w-1/2 h-full md:w-full md:h-1/2 relative border-r md:border-r-0 md:border-b border-white/5 flex items-center justify-center overflow-hidden bg-black/40">
+            {remoteStream ? (
+              <>
+                <video
+                  ref={setRemoteVideoRef}
+                  autoPlay
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+                {isRemoteVideoOff && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950/95 gap-2">
+                    <span className="text-4xl">📷</span>
+                    <span className="text-xs text-white/40 font-semibold tracking-wide uppercase">Görüntü Kapalı</span>
+                  </div>
+                )}
+                <div className="absolute bottom-3 left-4 bg-black/60 px-3 py-1.5 rounded-2xl text-[10px] md:text-xs font-semibold border border-white/10 flex items-center gap-2 backdrop-blur-md">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>Arkadaşınız</span>
+                  {isRemoteMuted && <span className="text-red-400 ml-1 font-bold">🎤 Sessiz</span>}
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center gap-2">
+                <span className="text-3xl animate-pulse text-indigo-400">👤</span>
+                <span className="text-[10px] md:text-xs text-white/30 font-medium tracking-wide uppercase">Arkadaşınız Bekleniyor...</span>
+              </div>
+            )}
+          </div>
+
+          {/* Local Webcam Pane */}
+          <div className="w-1/2 h-full md:w-full md:h-1/2 relative flex items-center justify-center overflow-hidden bg-black/40">
+            {stream ? (
+              <>
+                <video
+                  ref={setLocalVideoRef}
+                  autoPlay
+                  playsInline
+                  muted={true}
+                  className="w-full h-full object-cover"
+                  style={{ transform: "scaleX(-1)" }}
+                />
+                {isVideoOff && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950/95 gap-2">
+                    <span className="text-4xl">📷</span>
+                    <span className="text-xs text-white/40 font-semibold tracking-wide uppercase">Görüntünüz Kapalı</span>
+                  </div>
+                )}
+                <div className="absolute bottom-3 left-4 bg-black/60 px-3 py-1.5 rounded-2xl text-[10px] md:text-xs font-semibold border border-white/10 flex items-center gap-2 backdrop-blur-md">
+                  <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                  <span>Siz</span>
+                  {isMuted && <span className="text-red-400 ml-1 font-bold">🎤 Sessiz</span>}
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center gap-2">
+                <span className="text-3xl text-white/10">👤</span>
+                <span className="text-[10px] md:text-xs text-white/30 font-medium tracking-wide uppercase">Kamera Bulunamadı</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* FLOATING WEBCAMS (Only shown when webcamLayout === "floating") */}
+      {webcamLayout === "floating" && !hideCameras && (
+        <>
+          {/* Local Floating Webcam */}
+          {stream && (
+            <div
+              className={`absolute z-30 overflow-hidden rounded-2xl border border-white/10 shadow-2xl backdrop-blur-md bg-black/40 transition-all duration-300 ${
+                isDraggingLocal ? "cursor-grabbing scale-105" : "cursor-grab hover:border-white/30"
+              } ${!isVideoOff ? "opacity-100 scale-100" : "opacity-0 scale-75 pointer-events-none"}`}
+              style={{ width: 160, height: 110, left: localPos.x, top: localPos.y, touchAction: "none" }}
+              onPointerDown={handlePointerDownLocal} onPointerMove={handlePointerMoveLocal} onPointerUp={handlePointerUpLocal}
+            >
+              <video
+                ref={setLocalVideoRef}
+                autoPlay
+                playsInline
+                muted={true}
+                className="w-full h-full object-cover"
+                style={{ transform: "scaleX(-1)" }}
+              />
+              <div className="absolute bottom-1.5 left-2 pointer-events-none flex items-center gap-1.5">
+                <span className="bg-black/60 px-1.5 py-0.5 rounded text-[10px] font-medium border border-white/10 flex items-center gap-1">
+                  <span>Siz</span>
+                  {isMuted && <span className="text-red-400">🎤</span>}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Remote Floating Webcam */}
+          {remoteStream && (
+            <div
+              className={`absolute z-30 overflow-hidden rounded-2xl border border-white/10 shadow-2xl backdrop-blur-md bg-black/40 transition-all duration-300 ${
+                isDraggingRemote ? "cursor-grabbing scale-105" : "cursor-grab hover:border-white/30"
+              } ${!isRemoteVideoOff ? "opacity-100 scale-100" : "opacity-0 scale-75 pointer-events-none"}`}
+              style={{ width: 160, height: 110, left: remotePos.x, top: remotePos.y, touchAction: "none" }}
+              onPointerDown={handlePointerDownRemote} onPointerMove={handlePointerMoveRemote} onPointerUp={handlePointerUpRemote}
+            >
+              <video
+                ref={setRemoteVideoRef}
+                autoPlay
+                playsInline
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute bottom-1.5 left-2 pointer-events-none">
+                <span className="bg-black/60 px-1.5 py-0.5 rounded text-[10px] font-medium border border-white/10 flex items-center gap-1">
+                  <span>Arkadaşınız</span>
+                  {isRemoteMuted && <span className="text-red-400">🎤</span>}
+                </span>
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       {/* ACTIVE REACTIONS OVERLAY */}
       <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden">
@@ -861,7 +1156,7 @@ export default function Room() {
       )}
 
       {/* TOP BAR */}
-      {!isImmersive && (
+      {!hideControls && (
         <div className="absolute top-4 left-4 z-10 flex items-center gap-2 pointer-events-none">
           <span className="bg-black/60 text-white/90 px-3.5 py-1.5 rounded-full text-xs font-semibold backdrop-blur-md border border-white/10 flex items-center gap-2 shadow-lg">
             Oda ID: {roomId}
@@ -875,214 +1170,11 @@ export default function Room() {
         </div>
       )}
 
-      {/* FLOATING DRAGGABLE BUBBLE 1: LOCAL WEBCAM */}
-      {stream && (
-        <div
-          className={`absolute z-30 overflow-hidden rounded-2xl border border-white/10 shadow-2xl backdrop-blur-md bg-black/40 transition-all duration-300 ${
-            isDraggingLocal ? "cursor-grabbing scale-105" : "cursor-grab hover:border-white/30"
-          } ${(!isImmersive && !isVideoOff) ? "opacity-100 scale-100" : "opacity-0 scale-75 pointer-events-none"}`}
-          style={{ width: 160, height: 110, left: localPos.x, top: localPos.y, touchAction: "none" }}
-          onPointerDown={handlePointerDownLocal} onPointerMove={handlePointerMoveLocal} onPointerUp={handlePointerUpLocal}
-        >
-          <video
-            ref={localVideoRef}
-            autoPlay
-            playsInline
-            muted={true}
-            className="w-full h-full object-cover"
-            style={{ transform: "scaleX(-1)" }}
-          />
-          <div className="absolute bottom-1.5 left-2 pointer-events-none">
-            <span className="bg-black/60 px-1.5 py-0.5 rounded text-[10px] font-medium border border-white/10">Siz</span>
-          </div>
-        </div>
-      )}
-
-      {/* FLOATING DRAGGABLE BUBBLE 2: REMOTE WEBCAM */}
-      {remoteStream && (
-        <div
-          className={`absolute z-30 overflow-hidden rounded-2xl border border-white/10 shadow-2xl backdrop-blur-md bg-black/40 transition-all duration-300 ${
-            isDraggingRemote ? "cursor-grabbing scale-105" : "cursor-grab hover:border-white/30"
-          } ${(!isImmersive && !isRemoteVideoOff) ? "opacity-100 scale-100" : "opacity-0 scale-75 pointer-events-none"}`}
-          style={{ width: 160, height: 110, left: remotePos.x, top: remotePos.y, touchAction: "none" }}
-          onPointerDown={handlePointerDownRemote} onPointerMove={handlePointerMoveRemote} onPointerUp={handlePointerUpRemote}
-        >
-          <video
-            ref={remoteVideoRef}
-            autoPlay
-            playsInline
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute bottom-1.5 left-2 pointer-events-none">
-            <span className="bg-black/60 px-1.5 py-0.5 rounded text-[10px] font-medium border border-white/10">Arkadaşınız</span>
-          </div>
-        </div>
-      )}
-
-
-
-      {/* REACTION PANEL */}
-      {showReactionPanel && (
-        <div className="absolute bottom-24 md:bottom-28 left-1/2 -translate-x-1/2 z-40 bg-zinc-900/95 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl overflow-hidden w-[94vw] sm:w-[420px]">
-          <div className="flex border-b border-white/10">
-            {(["emoji", "gif"] as const).map(tab => (
-              <button key={tab} onClick={() => setReactionTab(tab)}
-                className={`flex-1 py-3 text-sm font-semibold uppercase tracking-wide transition-colors ${reactionTab === tab ? "text-indigo-400 border-b-2 border-indigo-400" : "text-white/40 hover:text-white/70"}`}>
-                {tab === "emoji" ? "😀 Emoji" : "🎬 GIF"}
-              </button>
-            ))}
-            <button onClick={() => setShowReactionPanel(false)} className="px-4 text-white/40 hover:text-white/80 text-xl leading-none pb-0.5">✕</button>
-          </div>
-
-          {reactionTab === "emoji" && (
-            <div className="grid grid-cols-6 gap-0.5 p-3 max-h-56 overflow-y-auto">
-              {QUICK_EMOJIS.map(e => (
-                <button key={e} onClick={() => sendReaction("emoji", e)}
-                  className="text-2xl md:text-3xl p-1.5 rounded-xl hover:bg-white/10 active:scale-110 transition-transform text-center">
-                  {e}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {reactionTab === "gif" && (
-            <div className="grid grid-cols-4 gap-2 p-3 max-h-64 overflow-y-auto">
-              {GIFS.map(g => {
-                const url = getGifUrl(g.id);
-                return (
-                  <button key={g.id} onClick={() => sendReaction("gif", url)}
-                    className="relative rounded-xl overflow-hidden aspect-square bg-zinc-800 hover:ring-2 hover:ring-indigo-400 active:scale-95 transition-all">
-                    <img src={url} alt={g.label} className="w-full h-full object-cover" loading="lazy" referrerPolicy="no-referrer" />
-                    <span className="absolute bottom-0.5 right-1 text-xs">{g.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* BAR CONTROLS */}
-      {!isImmersive && (
-        <div className="absolute bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-2 w-[96vw] md:w-auto" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-          {/* Row 1 — always visible core buttons */}
-          <div className="flex items-center justify-center gap-1.5 md:gap-3 bg-zinc-900/60 backdrop-blur-xl px-3 py-2 md:px-5 md:py-3 rounded-3xl border border-white/10 shadow-2xl w-full md:w-auto">
-
-          <button onClick={toggleMute} title={isMuted ? "Unmute" : "Mute"}
-            className={`${btnBase} ${isMuted ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 border border-red-500/50" : "bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20"}`}>
-            <svg className="w-5 h-5 md:w-6 md:h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-              {isMuted && <line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />}
-            </svg>
-          </button>
-
-          <button onClick={toggleVideo} title={isVideoOff ? "Camera On" : "Camera Off"}
-            className={`${btnBase} ${isVideoOff ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 border border-red-500/50" : "bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20"}`}>
-            <svg className="w-5 h-5 md:w-6 md:h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              {isVideoOff && <line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />}
-            </svg>
-          </button>
-
-          <button onClick={() => setShowReactionPanel(v => !v)} title="Reactions / GIF"
-            className={`${btnBase} ${showReactionPanel ? "bg-indigo-500 text-white" : "bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20"}`}>
-            <svg className="w-5 h-5 md:w-6 md:h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </button>
-
-          <button onClick={() => setIsImmersive(true)} title="Cinema Mode" className={btnGhost}>
-            <svg className="w-5 h-5 md:w-6 md:h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-          </button>
-
-          <button onClick={handleFullscreenClick} title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"} className={btnGhost}>
-            <svg className="w-5 h-5 md:w-6 md:h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              {isFullscreen
-                ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-              }
-            </svg>
-          </button>
-
-          <div className="w-px h-8 bg-white/10 mx-0.5" />
-
-          <button onClick={() => { if (stream) stream.getTracks().forEach(t => { try { t.stop(); } catch {} }); router.push("/"); }}
-            className={`${btnBase} bg-red-600 text-white hover:bg-red-700 border border-red-500 shadow-red-600/30`} title="Leave Room">
-            <svg className="w-5 h-5 md:w-6 md:h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ transform: "rotate(180deg)" }}>
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-          </button>
-
-          </div>{/* end row 1 */}
-
-          {/* Row 2 — secondary buttons, wraps on mobile */}
-          <div className="flex items-center justify-center flex-wrap gap-1.5 md:gap-2 bg-zinc-900/50 backdrop-blur-xl px-3 py-2 rounded-2xl border border-white/8 shadow-xl w-full md:w-auto">
-
-            <button onClick={shareScreen} title={isScreenSharing ? "Stop Sharing" : "Share Screen"}
-              className={`${btnBase} ${isScreenSharing ? "bg-indigo-500 text-white hover:bg-indigo-600 shadow-indigo-500/30" : "bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20"}`}>
-              <svg className="w-5 h-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-              <span className="text-[10px] ml-1 whitespace-nowrap font-semibold hidden sm:inline">{isScreenSharing ? "⏹ Durdur" : "Ekran"}</span>
-            </button>
-
-            <button
-              onClick={shareBrowserTab}
-              title={isTabSharing ? "Sekme Paylaşımını Durdur" : "Bu Sekmeyi Sesli Paylaş"}
-              className={`${btnBase} gap-1 px-2 text-sm font-semibold ${
-                isTabSharing
-                  ? "bg-purple-600 text-white hover:bg-purple-700 border border-purple-400/50"
-                  : "bg-purple-500/20 text-purple-300 hover:bg-purple-500/40 border border-purple-500/30"
-              }`}
-            >
-              <svg className="w-5 h-5 flex-shrink-0 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 8l2 2 4-4" />
-              </svg>
-              <span className="text-[10px] whitespace-nowrap font-semibold">{isTabSharing ? "⏹ Durdur" : "📺 Sekme+Ses"}</span>
-            </button>
-
-            <button
-              onClick={handleHyperbeamClick}
-              title={hyperbeamActive ? "Bulut Tarayıcıyı Sonlandır" : "Sanal Bulut PC Başlat"}
-              className={`${btnBase} gap-1 px-2 text-sm font-semibold ${
-                hyperbeamActive
-                  ? "bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-rose-500/30 border border-rose-400/50 animate-pulse"
-                  : "bg-gradient-to-r from-pink-500/20 to-rose-500/20 text-pink-300 hover:from-pink-500/40 hover:to-rose-500/40 border border-pink-500/30"
-              }`}
-            >
-              <svg className="w-5 h-5 flex-shrink-0 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-              <span className="text-[10px] whitespace-nowrap font-semibold">{hyperbeamActive ? "⏹ Bulut Kapat" : "☁️ Bulut PC"}</span>
-            </button>
-
-            <button
-              onClick={() => setVideoFit(v => v === "contain" ? "cover" : v === "cover" ? "stretch" : "contain")}
-              title={`Ekran Sığdırma: ${videoFit === "contain" ? "Orjinal" : videoFit === "cover" ? "Doldur" : "Sığdır"}`}
-              className={`relative ${btnBase} gap-1 px-2 ${videoFit !== "contain" ? "bg-pink-500/20 text-pink-400 border border-pink-500/50" : "bg-white/10 text-white border border-transparent"}`}
-            >
-              <svg className="w-5 h-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M4 8V7a3 3 0 013-3h10a3 3 0 013 3v1" />
-                <rect x="6" y="8" width="12" height="8" rx="1" stroke="currentColor" strokeWidth={1.5} fill="none" />
-              </svg>
-              <span className="text-[10px] whitespace-nowrap font-semibold">
-                {videoFit === "contain" ? "Orjinal" : videoFit === "cover" ? "Doldur" : "Sığdır"}
-              </span>
-            </button>
-
-          </div>{/* end row 2 */}
-
-        </div>
-      )}
-
-      {isImmersive && (
+      {/* RESTORE CONTROLS BUTTON (Shown when controls are hidden) */}
+      {hideControls && (
         <button
-          onClick={() => setIsImmersive(false)}
-          className="absolute top-4 right-4 z-50 p-3 rounded-full bg-black/40 hover:bg-black/80 border border-white/10 text-white/40 hover:text-white backdrop-blur-md transition-all duration-300 opacity-40 hover:opacity-100 shadow-lg"
+          onClick={() => setHideControls(false)}
+          className="absolute bottom-6 right-6 z-50 p-3 rounded-full bg-black/40 hover:bg-black/80 border border-white/10 text-white/40 hover:text-white backdrop-blur-md transition-all duration-300 opacity-60 hover:opacity-100 shadow-lg"
           title="Menüyü Göster"
         >
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1090,97 +1182,6 @@ export default function Room() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
           </svg>
         </button>
-      )}
-
-      {/* MOBILE SCREEN SHARE GUIDE MODAL */}
-      {/* MOBILE SCREEN SHARE GUIDE MODAL */}
-      {showMobileGuide && (
-        <div className="absolute inset-0 z-[100] flex items-end md:items-center justify-center bg-black/85 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="w-full max-w-md bg-zinc-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden my-auto">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4 flex items-center justify-between">
-              <div>
-                <h2 className="text-white font-bold text-lg">📱 Mobil Ekran Paylaşımı</h2>
-                <p className="text-white/70 text-xs mt-0.5">Android / iOS için adım adım rehber</p>
-              </div>
-              <button
-                onClick={() => setShowMobileGuide(false)}
-                className="text-white/60 hover:text-white text-2xl leading-none"
-              >✕</button>
-            </div>
-
-            {/* Steps */}
-            <div className="px-6 py-5 space-y-4 max-h-[60vh] overflow-y-auto">
-              <div className="flex gap-3 items-start">
-                <span className="w-7 h-7 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-400 text-sm font-bold flex-shrink-0 flex items-center justify-center">1</span>
-                <div>
-                  <p className="text-white text-sm font-semibold">Filmi arka planda aç</p>
-                  <p className="text-white/50 text-xs mt-0.5">Bu uygulamayı küçültüp telefonun tarayıcısında izlemek istediğin filmi/videoyu başlat.</p>
-                </div>
-              </div>
-
-              <div className="flex gap-3 items-start">
-                <span className="w-7 h-7 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-400 text-sm font-bold flex-shrink-0 flex items-center justify-center">2</span>
-                <div>
-                  <p className="text-white text-sm font-semibold">Bildirim panelini aşağı çek</p>
-                  <p className="text-white/50 text-xs mt-0.5">Ekranın üstünden aşağı iki kez kaydırarak hızlı ayarlar panelini aç.</p>
-                </div>
-              </div>
-
-              <div className="flex gap-3 items-start">
-                <span className="w-7 h-7 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-400 text-sm font-bold flex-shrink-0 flex items-center justify-center">3</span>
-                <div>
-                  <p className="text-white text-sm font-semibold">"Ekran Kaydı"na bas</p>
-                  <p className="text-white/50 text-xs mt-0.5">
-                    <span className="text-yellow-400 font-semibold">⚠️ Önemli:</span> Sesi de paylaşmak için mikrofon/ses ikonuna dokunarak <span className="text-green-400 font-semibold">"Sistem Sesi"ni aktif et.</span>
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-3 items-start">
-                <span className="w-7 h-7 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-400 text-sm font-bold flex-shrink-0 flex items-center justify-center">4</span>
-                <div>
-                  <p className="text-white text-sm font-semibold">WatchTogether'a geri dön</p>
-                  <p className="text-white/50 text-xs mt-0.5">Kaydı başlattıktan sonra bu uygulamaya geri dön — arkadaşın seni otomatik izlemeye başlar!</p>
-                </div>
-              </div>
-
-              {/* Troubleshooting Segment */}
-              <div className="pt-4 border-t border-white/5 space-y-3">
-                <p className="text-sm font-bold text-indigo-400 flex items-center gap-1.5">
-                  🔍 Ekran Kaydı Düğmesi Çıkmıyor mu?
-                </p>
-                
-                <div className="bg-white/5 p-3.5 rounded-2xl border border-white/5 text-xs text-white/70 space-y-2">
-                  <p className="font-semibold text-white">Yöntem A: Paneli Düzenle (Düğmeyi Ekle)</p>
-                  <p className="leading-relaxed">
-                    Hızlı ayarlar panelini sonuna kadar indirin. Sağ üstteki veya alt kısmdaki <span className="text-indigo-300 font-medium">Kalem (Düzenle)</span> veya <span className="text-indigo-300 font-medium">Üç Nokta</span> simgesine basın. Alttaki gizli simgeler arasından <span className="text-indigo-300 font-medium">"Ekran Kaydedici"</span> simgesini bulup yukarıya (aktif olanların yanına) sürükleyin.
-                  </p>
-                </div>
-
-                <div className="bg-white/5 p-3.5 rounded-2xl border border-white/5 text-xs text-white/70 space-y-2">
-                  <p className="font-semibold text-white">Yöntem B: Ücretsiz Uygulama Kullan</p>
-                  <p className="leading-relaxed">
-                    Telefonunuzda dahili ekran kaydedici yoksa, Google Play Store'dan tamamen ücretsiz ve reklamsız olan <span className="text-indigo-300 font-medium">"AZ Screen Recorder"</span> veya <span className="text-indigo-300 font-medium">"XRecorder"</span> uygulamasını indirin. Bu uygulamalar tek tıkla sesli ekran paylaşımı yapmanızı sağlar.
-                  </p>
-                </div>
-
-                <div className="bg-indigo-500/10 p-3 rounded-2xl border border-indigo-500/20 text-xs text-indigo-300 text-center">
-                  💡 En iyi ve pürüzsüz deneyim için izleme partisini bir bilgisayardan (PC/Laptop) Chrome sekme paylaşımıyla başlatmanızı öneririz!
-                </div>
-              </div>
-            </div>
-
-            <div className="px-6 py-4 bg-zinc-950/50 border-t border-white/5 flex gap-3">
-              <button
-                onClick={() => setShowMobileGuide(false)}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-2xl transition-colors text-sm shadow-lg shadow-purple-500/20"
-              >
-                Anladım, Deneyeceğim!
-              </button>
-            </div>
-          </div>
-        </div>
       )}
 
       {/* HYPERBEAM KEY MODAL */}
@@ -1223,6 +1224,32 @@ export default function Room() {
                   value={hyperbeamApiKey}
                   onChange={e => setHyperbeamApiKey(e.target.value)}
                   className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-pink-500 placeholder:text-white/20"
+                  placeholder="sk_live_..."
+                />
+              </div>
+            </div>
+
+            <div className="px-6 pb-6 flex gap-3">
+              <button
+                onClick={() => setShowHyperbeamKeyModal(false)}
+                className="flex-1 bg-white/5 hover:bg-white/10 text-white font-semibold py-3 rounded-2xl transition-colors text-sm"
+              >
+                İptal
+              </button>
+              <button
+                onClick={() => startHyperbeamSession(hyperbeamApiKey)}
+                disabled={!hyperbeamApiKey.trim()}
+                className="flex-1 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 disabled:opacity-50 text-white font-semibold py-3 rounded-2xl transition-colors text-sm shadow-lg shadow-pink-500/20"
+              >
+                Bulut PC Başlat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}0 placeholder:text-white/20"
                   placeholder="sk_live_..."
                 />
               </div>
