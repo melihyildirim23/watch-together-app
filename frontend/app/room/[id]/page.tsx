@@ -1249,30 +1249,4 @@ export default function Room() {
       )}
     </div>
   );
-}0 placeholder:text-white/20"
-                  placeholder="sk_live_..."
-                />
-              </div>
-            </div>
-
-            <div className="px-6 pb-6 flex gap-3">
-              <button
-                onClick={() => setShowHyperbeamKeyModal(false)}
-                className="flex-1 bg-white/5 hover:bg-white/10 text-white font-semibold py-3 rounded-2xl transition-colors text-sm"
-              >
-                İptal
-              </button>
-              <button
-                onClick={() => startHyperbeamSession(hyperbeamApiKey)}
-                disabled={!hyperbeamApiKey.trim()}
-                className="flex-1 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 disabled:opacity-50 text-white font-semibold py-3 rounded-2xl transition-colors text-sm shadow-lg shadow-pink-500/20"
-              >
-                Bulut PC Başlat
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
 }
