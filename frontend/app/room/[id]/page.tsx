@@ -31,7 +31,7 @@ const QUICK_EMOJIS = [
   "💀", "👻", "👽", "🤖", "🎃", "🌈", "💫", "🌙", "☀️", "💎",
 ];
 
-const getGifUrl = (id: string) => `https://i.giphy.com/${id}.gif`;
+const getGifUrl = (id: string) => `${SOCKET_URL}/api/gif-proxy?id=${id}`;
 
 const GIFS = [
   // 😂 Komik / Kahkaha
@@ -847,7 +847,7 @@ export default function Room() {
           <div key={r.id} className="reaction-pop drop-shadow-2xl">
             {r.type === "emoji"
               ? <span className="text-7xl md:text-9xl">{r.content}</span>
-              : <img src={r.content} alt="reaction" className="w-40 h-40 md:w-56 md:h-56 object-contain rounded-2xl" />
+              : <img src={r.content} alt="reaction" className="w-40 h-40 md:w-56 md:h-56 object-contain rounded-2xl" referrerPolicy="no-referrer" />
             }
           </div>
         ))}
@@ -952,7 +952,7 @@ export default function Room() {
                 return (
                   <button key={g.id} onClick={() => sendReaction("gif", url)}
                     className="relative rounded-xl overflow-hidden aspect-square bg-zinc-800 hover:ring-2 hover:ring-indigo-400 active:scale-95 transition-all">
-                    <img src={url} alt={g.label} className="w-full h-full object-cover" loading="lazy" />
+                    <img src={url} alt={g.label} className="w-full h-full object-cover" loading="lazy" referrerPolicy="no-referrer" />
                     <span className="absolute bottom-0.5 right-1 text-xs">{g.label}</span>
                   </button>
                 );
