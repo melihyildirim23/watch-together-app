@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "À Deux, Sempre",
   description: "Birlikte Film İzleme ve Bulut PC Uygulaması",
+  referrer: "no-referrer",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
