@@ -31,35 +31,129 @@ const QUICK_EMOJIS = [
   "💀", "👻", "👽", "🤖", "🎃", "🌈", "💫", "🌙", "☀️", "💎",
 ];
 
+const getGifUrl = (id: string) => `https://i.giphy.com/${id}.gif`;
+
 const GIFS = [
-  // Kahkaha / Komik
-  { label: "😂 Kahkaha", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbXVtcjl4aG80aHBhMGp5bHBleGNpMGF2dGU0eDFsNXNsazdlNzZxbiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3oEjI6SIIHBdRxXI40/giphy.gif" },
-  { label: "🤣 Yerde Gülüyor", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNmpjZm91eTF4bHk2NHE5OTd3dzN3eWY4NTlteTF1ajd5YWxpMTJ1biZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l4FGJAarb2sJPlXFu/giphy.gif" },
-  { label: "💀 Ölüyorum", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbzBuYnQxemhwN3VlZTdjNnZ4OWZ6bjJxZ214ajNreWl0dGg1N2JkYyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/8vQSQ3cNXuDGo/giphy.gif" },
-  { label: "😹 Kedi Güler", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExb3RhcHdlcmVlcmVueTdxNzBteHRkM3Y2dWNzd2FzYzl3YW8xNTd0YyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/12OMY457Zu7xJG/giphy.gif" },
-  { label: "🙈 Hata Yaptım", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNGo3cXBxbHdpaHo0ZHo4OGhidXRka3B4enU2bnFtYjY2OWcwbjJsZCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3og0IPikp8PxHbyK2Y/giphy.gif" },
-  // Mutlu / Kutlama
-  { label: "🎉 Tebrik", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExaHk1NGdoanhtd3ZnanZnZmhxbXA1bWs0NHkyN3Fqd2oyM2Jrc3BjYiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l0MYt5jPR6QX5pnqM/giphy.gif" },
-  { label: "🥳 Parti", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExdGI5YjFhemI2Nm5hd3Jud3pzazJzbXY5bDFiZXBvNHp4ZWxhY285MyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/26tOZ42Mg6pbTUPHW/giphy.gif" },
-  { label: "👏 Alkış", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMXY0bHhib2FsdXo1am9kbnBxNHV3eHBhYjZwdmVpdWc5cGRlbXZjZiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/7rj2ZgttvgomY/giphy.gif" },
-  { label: "🎊 Konfeti", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExdHVybHlmazV5Y2RzdjAwd3hkMXQ5OGlsY3dxZjcwNXFhZzl4ZzluZCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/g9582DNuQppxC/giphy.gif" },
-  { label: "🔥 Harika", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcWl5dGJscTdub3YzMmZia3BwdnF6NHM2bWZ4cW01bHQ1eGkyazV1ZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/xT2GTgSkMjBOocrBM4/giphy.gif" },
-  // Aşk / Sevgi
-  { label: "😍 Aşk", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExeTlrMnQzNmVqdTR1eTZyeXBkeTJsaDF5dG40Y2VrNDd1aG00cDkxciZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/26Ff3yDMoOp5ySMkc/giphy.gif" },
-  { label: "💕 Kalpler", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExYWY2aXUwYzNucWJnNzQ3aTE3aGlrb2hxbGhpOGk5YmhwNHo0OGdrdyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3rXPNHHzSMtlRGPMqQ/giphy.gif" },
-  // Şok / Sürpriz
-  { label: "😮 Şok", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMnpxcjJ4azZsZHE4dHF1azB5NWMyNWN4OHV2dGJwcHU1dHV3bTZlMyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/26ufdipQqU84H52sg/giphy.gif" },
-  { label: "🤯 Kafam Patladı", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNXh6YmV4ejlzbm9vMndqYzF5bm43ZHR2cW1zeW94dWd0Z3UxeWh4ayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/xT0xeJpnrWC4XWblEk/giphy.gif" },
-  // Ağlama / Üzgün
-  { label: "😢 Ağlama", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExaTZrZmFmMXpxaTdwYzVubXU3N29laTZ5dWs3amRkZWxlajQ3OXZibyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/xT9IgG50Lg7rusyxfm/giphy.gif" },
-  // Film / Popcorn
-  { label: "🍿 Popcorn", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExaTJmaHQ0ZGptNXpocm1zbnV4MnU4OHBobHBoY2lraTVkYmhkb2I2biZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/13cptIwW9bgzkA/giphy.gif" },
-  { label: "🎬 Sinema", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExdm5lenNpb3VrdnBudTd4bW5sNGhsMWR3aGVua29lcW14eHl2ZW9lbCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/pUeXcg80cO8I8/giphy.gif" },
-  { label: "🎵 Dans", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNm5sMm53eDJhNmd3OGZhdXV4ZzVoNnpuYTZzc3EzY2puNnVkNnBieiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l0MYC0LajbaPoEADu/giphy.gif" },
-  { label: "🍌 Muz Dansı", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbmNqZW01OXM5MHZzMWE5dDdkdWZzcHkwOGxtNm51dzdydHljM3d1diZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/EluFWEdnZtv1e/giphy.gif" },
-  { label: "👋 Selam", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExb2c4NW1ycGJ5ZWhsMWVhaDVubDl2NXYxbjc5Y2d3Z3Y5YWdpM3ZkYSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3og0IOIq2j83qSzDyU/giphy.gif" },
-  { label: "🚀 Uçuş", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExaW1wbXRkY3RheXcxdXFhM3VucGFpYzVzNzMydmt2aGp0dXVtc3VrdCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o7WTBGtbSCEsaU4s0/giphy.gif" },
+  // 😂 Komik / Kahkaha
+  { label: "😂 Kahkaha", id: "3oEjI6SIIHBdRxXI40" },
+  { label: "🤣 Yerde Gülüyor", id: "l4FGJAarb2sJPlXFu" },
+  { label: "💀 Ölüyorum", id: "8vQSQ3cNXuDGo" },
+  { label: "😹 Kedi Güler", id: "12OMY457Zu7xJG" },
+  { label: "😜 Deli Gibi", id: "5GoVLqeAOo6PK" },
+  { label: "🤦 Facepalm", id: "3og0IPikp8PxHbyK2Y" },
+  { label: "🐸 Kermit Şok", id: "d3mlE7uhX8KFgEmY" },
+  { label: "🤦 Ne yapayım", id: "dkGqmRTJXlhcQ" },
+  { label: "🌽 Minion Gülüşü", id: "M12t2bUR1mG5y" },
+  { label: "🧽 SpongeBob Gülüşü", id: "26AHCgWc6dJWRUtJ6" },
+  { label: "👶 Bebek Kahkahası", id: "10yIEN8cMn40IE" },
+  { label: "🐶 Köpek Sırıtması", id: "113427m33CyUha" },
+  { label: "😈 Kötü Kahkaha", id: "7zxzMXcrk4PG" },
+  { label: "😏 Alaycı Gülüş", id: "jQmVFypWqn2yA" },
+  { label: "🥸 Jim Carrey", id: "12SBwtRR9BnWg" },
+
+  // 🎉 Kutlama / Mutlu
+  { label: "🎉 Tebrik", id: "l0MYt5jPR6QX5pnqM" },
+  { label: "🥳 Parti", id: "26tOZ42Mg6pbTUPHW" },
+  { label: "👏 Alkış", id: "7rj2ZgttvgomY" },
+  { label: "🎊 Konfeti", id: "g9582DNuQppxC" },
+  { label: "🏆 Kazandım", id: "g01ZnwAX5R9yJl74GJ" },
+  { label: "💃 Dans", id: "l0HlGgbOFqWyCOGOs" },
+  { label: "🕺 Dans Pistinde", id: "3oGRFl3jwFVLsGFakw" },
+  { label: "✅ Başardım", id: "111ebonhjOu4vK" },
+  { label: "🕴️ Carlton", id: "12tV141W7oCcGk" },
+  { label: "🌽 Minions Mutlu", id: "14udF3WUwwGiss" },
+  { label: "🧽 SpongeBob Mutlu", id: "nDSlfqf0gn5qh" },
+  { label: "🐱 Kedi Dansı", id: "13CoXDiaCcC9Cl" },
+  { label: "🧒 Çocuk Kutlama", id: "l0HU7yHIK6V2SDFec" },
+  { label: "🤩 Harika", id: "3o7abldj0OL3f5CAsU" },
+  { label: "🎆 Havai Fişek", id: "26tP21C1S0tXmpxTO" },
+
+  // 😮 Şok / Sürpriz
+  { label: "😮 Şok", id: "26ufdipQqU84H52sg" },
+  { label: "🤯 Kafa Patladı", id: "3o6Zt6ML6BklcajjsA" },
+  { label: "😱 İnanamıyorum", id: "11sBLVxNs7v6WA" },
+  { label: "🐶 Hayret", id: "UO5elnTqI4OPK" },
+  { label: "🤯 Akıl Uçması", id: "xT0xeJpnrWC4XWblEk" },
+  { label: "⚡ Şok Pikachu", id: "3kzJvclYXS47K" },
+  { label: "🦖 Pratt Şok", id: "3o7qDYXe0Qu9698xF6" },
+  { label: "🙅 Steve HAYIR", id: "cqwP5vD976ipq" },
+  { label: "😳 Şaşıran Çocuk", id: "3o7527xuWmWv3N2Ny7" },
+  { label: "👀 Göz Yuvarlama", id: "l3q2K1M5wN64" },
+
+  // 😍 Aşk / Sevgi
+  { label: "😍 Aşk", id: "26Ff3yDMoOp5ySMkc" },
+  { label: "💕 Kalpler", id: "3rXPNHHzSMtlRGPMqQ" },
+  { label: "🥰 Sevgi Dolu", id: "Peqz6OoKBXAe0" },
+  { label: "😘 Öpücük", id: "3o7TKoWXm3okO1bdCw" },
+  { label: "🐱 Kedi Sevgisi", id: "wcJW16149720" },
+  { label: "🧽 Kalp Kutu", id: "26FLdmIp6wJr91JAI" },
+  { label: "🫶 Kalp Elleri", id: "145fC1268mD8tO" },
+  { label: "🐼 Panda Aşk", id: "4PYB540dKsmE8" },
+  { label: "🤗 Sarılma", id: "ZBQhoZC0nqknS" },
+  { label: "💓 Kalp Atışı", id: "12vV5gZ8feWi7C" },
+
+  // 😢 Ağlama / Üzgün
+  { label: "😢 Ağlıyorum", id: "xT9IgG50Lg7rusyxfm" },
+  { label: "😭 Çok Üzgün", id: "ROF8OQvDmxytW" },
+  { label: "🥺 Çizmeli Kedi", id: "qU05wYe134652" },
+  { label: "💅 Kim Kardashian", id: "Iau2Mc2YPss5a" },
+  { label: "☔ Yağmur Altında", id: "d2jjuAZzDSVLy" },
+  { label: "👶 Ağlayan Bebek", id: "2WxWxgFTWpuq4" },
+  { label: "🐕 Üzgün Köpek", id: "14d1db" },
+  { label: "😿 Üzgün Kedi", id: "3Orslc681" },
+  { label: "🤦 Oh Hayır", id: "9Y5BbDSkVJ5II" },
+  { label: "😔 Hayal Kırıklığı", id: "26xBI73g35CBBC3t6" },
+
+  // 🍿 Film / Eğlence
+  { label: "🍿 Popcorn", id: "13cptIwW9bgzkA" },
+  { label: "🎬 Sinema", id: "pUeXcg80cO8I8" },
+  { label: "🎵 Dans Et", id: "l0MYC0LajbaPoEADu" },
+  { label: "🍌 Muz Dansı", id: "EluFWEdnZtv1e" },
+  { label: "🌈 Nyan Cat", id: "3oKIPrc2ngFZ6BTyww" },
+  { label: "🎮 Oyun Modu", id: "xT9IgHHnMPAjb5f8Mk" },
+  { label: "🌳 Homer Çalılar", id: "jUwpNzg9jcyrK" },
+  { label: "🍿 Popcorn Yiyen", id: "3o7rc0qMuRAq5xleMg" },
+  { label: "🕶️ Jackson Popcorn", id: "p0L1Y4oGl39hC" },
+  { label: "🎧 DJ Kedi", id: "5GoVLqeAOo6PK" },
+
+  // 👍 Onay / Reddetme
+  { label: "👍 Harika", id: "l3q2XhfQ8oCkm1Ts4" },
+  { label: "🙅 Hayır", id: "3o6ZtaO9BZHcOjmErm" },
+  { label: "🎤 Mic Drop", id: "l0HlvtIPzPdt2uapq" },
+  { label: "🚀 Uçuyoruz", id: "3o7WTBGtbSCEsaU4s0" },
+  { label: "👋 Selam", id: "3og0IMJcSI8p6hYQXS" },
+  { label: "🐕 Baş Sallıyor", id: "yJFeycRK2DB4c" },
+  { label: "🔥 Alev", id: "T2vDaYr8y1LRm" },
+  { label: "👻 Hayalet Dans", id: "10pxA5bQx6am8o" },
+  { label: "💯 Mükemmel", id: "QMHoU66sBXqqLqYvGO" },
+  { label: "👍 Onay", id: "3o7abldj0OL3f5CAsU" },
+  { label: "🙆 Evet", id: "3oFzmc17crToG2OB68" },
+  { label: "🙅 Yok Artık", id: "26hkhHM9V1QCQ0HYg" },
+  { label: "👌 Tamamdır", id: "4T3QP5BDigpmU" },
+  { label: "👏 Obama Alkış", id: "3o7qDJKT" },
+
+  // 😠 Kızgın / Sinirli
+  { label: "😠 Kızgın", id: "xT0Gq30VfVsM1wFDW" },
+  { label: "😡 Çok Kızgın", id: "12gY6Jgowz355i" },
+  { label: "┬─┬ ノ( ゜-゜ノ)", id: "tJCyr6s5li5X2" },
+  { label: "😿 Sinirli Kedi", id: "2G376r5qs40yQ" },
+  { label: "👶 Çıldıran Bebek", id: "10t3xNDLg1K03C" },
+  { label: "🦆 Donald Duck", id: "u1vFt244Dm10Y" },
+  { label: "💻 Pc Kırma", id: "xTiTnHXb3dVHRJo31y" },
+  { label: "🤯 Saç Yolma", id: "l1J9u3y35uWiRLF6" },
+  { label: "🙄 Göz Devirme", id: "tZiLKidv7XYTC" },
+  { label: "🐕 Sinirli Köpek", id: "132pSKn6EO55hS" },
+
+  // 🕺 Dans / Müzik
+  { label: "🕺 Michael Jackson", id: "pU315Kb91II48" },
+  { label: "💃 Shakira Dansı", id: "fA1OFFAzYauMo" },
+  { label: "🎸 Rock Gitar", id: "l2JIdnXD575Cs" },
+  { label: "🎧 Müzik Keyfi", id: "l4Ep3N17MRJ7K" },
+  { label: "🎤 Şarkı Söyleyen", id: "3oEdv0LJISfOiQGSmA" },
+  { label: "🥳 Parti Zamanı", id: "l2JHPB2PtZCYiJ7S8" },
+  { label: "🕶️ Cool Dansçı", id: "3o72F8t31QO40OT7" }
 ];
+
 
 
 export default function Room() {
@@ -853,13 +947,16 @@ export default function Room() {
 
           {reactionTab === "gif" && (
             <div className="grid grid-cols-4 gap-2 p-3 max-h-64 overflow-y-auto">
-              {GIFS.map(g => (
-                <button key={g.url} onClick={() => sendReaction("gif", g.url)}
-                  className="relative rounded-xl overflow-hidden aspect-square bg-zinc-800 hover:ring-2 hover:ring-indigo-400 active:scale-95 transition-all">
-                  <img src={g.url} alt={g.label} className="w-full h-full object-cover" loading="lazy" />
-                  <span className="absolute bottom-0.5 right-1 text-xs">{g.label}</span>
-                </button>
-              ))}
+              {GIFS.map(g => {
+                const url = getGifUrl(g.id);
+                return (
+                  <button key={g.id} onClick={() => sendReaction("gif", url)}
+                    className="relative rounded-xl overflow-hidden aspect-square bg-zinc-800 hover:ring-2 hover:ring-indigo-400 active:scale-95 transition-all">
+                    <img src={url} alt={g.label} className="w-full h-full object-cover" loading="lazy" />
+                    <span className="absolute bottom-0.5 right-1 text-xs">{g.label}</span>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
