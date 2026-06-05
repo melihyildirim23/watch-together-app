@@ -26,7 +26,7 @@ const QUICK_EMOJIS = [
   // Hayvanlar
   "🐱", "🐶", "🐸", "🦊", "🐼", "🐨", "🦁", "🐯", "🐻", "🦋",
   // Yiyecek
-  "🍕", "🍔", "🌮", "🍜", "🍣", "🍦", "🎂", "🍩", "🧋", "🥤",
+  "🍕", "🍔", "🌮", "🍜", "🍣", "🍦", "🧁", "🍩", "🧋", "🥤",
   // Misc eğlenceli
   "💀", "👻", "👽", "🤖", "🎃", "🌈", "💫", "🌙", "☀️", "💎",
 ];
@@ -39,7 +39,7 @@ const GIFS = [
   { label: "🤣 Yerde Gülüyor", id: "l4FGJAarb2sJPlXFu" },
   { label: "💀 Ölüyorum", id: "8vQSQ3cNXuDGo" },
   { label: "😹 Kedi Güler", id: "12OMY457Zu7xJG" },
-  { label: "😜 Deli Gibi", id: "5GoVLqeAOo6PK" },
+  {label: "😜 Deli Gibi", id: "26uf8P5K26GzALAdG" },
   { label: "🤦 Facepalm", id: "3og0IPikp8PxHbyK2Y" },
   { label: "🐸 Kermit Şok", id: "d3mlE7uhX8KFgEmY" },
   { label: "🤦 Ne yapayım", id: "dkGqmRTJXlhcQ" },
@@ -65,7 +65,7 @@ const GIFS = [
   { label: "🧽 SpongeBob Mutlu", id: "nDSlfqf0gn5qh" },
   { label: "🐱 Kedi Dansı", id: "13CoXDiaCcC9Cl" },
   { label: "🧒 Çocuk Kutlama", id: "l0HU7yHIK6V2SDFec" },
-  { label: "🤩 Harika", id: "3o7abldj0OL3f5CAsU" },
+  { label: "🤩 Harika", id: "l0MYGzh7D3Kl74Wy4" },
   { label: "🎆 Havai Fişek", id: "26tP21C1S0tXmpxTO" },
 
   // 😮 Şok / Sürpriz
