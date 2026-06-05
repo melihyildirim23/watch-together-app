@@ -928,59 +928,61 @@ export default function Room() {
 
         {/* BAR CONTROLS */}
         {!hideControls && (
-          <div className="absolute bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-2 w-[96vw] md:w-auto" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-            {/* Row 1 — always visible core buttons */}
-            <div className="flex items-center justify-center gap-1.5 md:gap-3 bg-zinc-900/60 backdrop-blur-xl px-3 py-2 md:px-5 md:py-3 rounded-3xl border border-white/10 shadow-2xl w-full md:w-auto">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-2 w-[96vw] sm:w-auto" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+
+            {/* Row 1 — core buttons, always visible */}
+            <div className="flex items-center justify-center gap-1 sm:gap-2 bg-zinc-900/80 backdrop-blur-xl px-2 py-2 sm:px-4 sm:py-2.5 rounded-3xl border border-white/10 shadow-2xl w-full sm:w-auto overflow-x-auto">
 
               <button onClick={toggleMute} title={isMuted ? "Sesi Aç" : "Sesi Kapat"}
-                className={`${btnBase} ${isMuted ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 border border-red-500/50" : "bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20"}`}>
-                <svg className="w-5 h-5 md:w-6 md:h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                className={`flex-shrink-0 flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 rounded-2xl transition-all duration-200 active:scale-90 ${isMuted ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 border border-red-500/50" : "bg-white/10 text-white hover:bg-white/20 border border-transparent"}`}>
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                   {isMuted && <line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />}
                 </svg>
               </button>
 
               <button onClick={toggleVideo} title={isVideoOff ? "Kamerayı Aç" : "Kamerayı Kapat"}
-                className={`${btnBase} ${isVideoOff ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 border border-red-500/50" : "bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20"}`}>
-                <svg className="w-5 h-5 md:w-6 md:h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                className={`flex-shrink-0 flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 rounded-2xl transition-all duration-200 active:scale-90 ${isVideoOff ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 border border-red-500/50" : "bg-white/10 text-white hover:bg-white/20 border border-transparent"}`}>
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   {isVideoOff && <line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />}
                 </svg>
               </button>
 
               <button onClick={() => setHideCameras(v => !v)} title={hideCameras ? "Kameraları Göster" : "Kameraları Gizle"}
-                className={`${btnBase} ${hideCameras ? "bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 border border-amber-500/50" : "bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20"}`}>
-                <svg className="w-5 h-5 md:w-6 md:h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  {hideCameras ? (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-                  ) : (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  )}
+                className={`flex-shrink-0 flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 rounded-2xl transition-all duration-200 active:scale-90 ${hideCameras ? "bg-amber-500/20 text-amber-500 border border-amber-500/50" : "bg-white/10 text-white hover:bg-white/20 border border-transparent"}`}>
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  {hideCameras
+                    ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                    : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  }
                 </svg>
               </button>
 
-              <button onClick={() => setWebcamLayout(v => v === "floating" ? "split" : "floating")} title={webcamLayout === "split" ? "Yüzen Düzen (Floating)" : "Ekranı Böl (Split Screen)"}
-                className={`${btnBase} ${webcamLayout === "split" ? "bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 border border-indigo-500/50" : "bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20"}`}>
-                <svg className="w-5 h-5 md:w-6 md:h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <button onClick={() => setWebcamLayout(v => v === "floating" ? "split" : "floating")} title={webcamLayout === "split" ? "Yüzen Düzen" : "Ekranı Böl"}
+                className={`flex-shrink-0 flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 rounded-2xl transition-all duration-200 active:scale-90 ${webcamLayout === "split" ? "bg-indigo-500/20 text-indigo-400 border border-indigo-500/50" : "bg-white/10 text-white hover:bg-white/20 border border-transparent"}`}>
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                 </svg>
               </button>
 
               <button onClick={() => setShowReactionPanel(v => !v)} title="Tepkiler / GIF"
-                className={`${btnBase} ${showReactionPanel ? "bg-indigo-500 text-white" : "bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20"}`}>
-                <svg className="w-5 h-5 md:w-6 md:h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                className={`flex-shrink-0 flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 rounded-2xl transition-all duration-200 active:scale-90 ${showReactionPanel ? "bg-indigo-500 text-white" : "bg-white/10 text-white hover:bg-white/20 border border-transparent"}`}>
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </button>
 
-              <button onClick={() => setHideControls(true)} title="Kontrolleri Gizle" className={btnGhost}>
-                <svg className="w-5 h-5 md:w-6 md:h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <button onClick={() => setHideControls(true)} title="Kontrolleri Gizle"
+                className="flex-shrink-0 flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-white/10 text-white hover:bg-white/20 border border-transparent transition-all duration-200 active:scale-90">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
                 </svg>
               </button>
 
-              <button onClick={handleFullscreenClick} title={isFullscreen ? "Tam Ekrandan Çık" : "Tam Ekran"} className={btnGhost}>
-                <svg className="w-5 h-5 md:w-6 md:h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <button onClick={handleFullscreenClick} title={isFullscreen ? "Tam Ekrandan Çık" : "Tam Ekran"}
+                className="flex-shrink-0 flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-white/10 text-white hover:bg-white/20 border border-transparent transition-all duration-200 active:scale-90">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   {isFullscreen
                     ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
@@ -988,80 +990,61 @@ export default function Room() {
                 </svg>
               </button>
 
-              <div className="w-px h-8 bg-white/10 mx-0.5" />
+              <div className="flex-shrink-0 w-px h-7 bg-white/10 mx-0.5" />
 
               <button onClick={() => { if (stream) stream.getTracks().forEach(t => { try { t.stop(); } catch {} }); router.push("/"); }}
-                className={`${btnBase} bg-red-600 text-white hover:bg-red-700 border border-red-500 shadow-red-600/30`} title="Odadan Çık">
-                <svg className="w-5 h-5 md:w-6 md:h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ transform: "rotate(180deg)" }}>
+                className="flex-shrink-0 flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-red-600 text-white hover:bg-red-700 border border-red-500 transition-all duration-200 active:scale-90" title="Odadan Çık">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ transform: "rotate(180deg)" }}>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
               </button>
+            </div>
 
-            </div>{/* end row 1 */}
+            {/* Row 2 — secondary buttons, shown on ALL devices (horizontally scrollable on mobile) */}
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-zinc-900/60 backdrop-blur-xl px-3 py-2 rounded-2xl border border-white/10 shadow-xl w-full sm:w-auto overflow-x-auto scrollbar-none">
 
-            {/* Row 2 — secondary buttons (Hidden on Mobile) */}
-            {!isMobile && (
-              <div className="flex items-center justify-center flex-wrap gap-1.5 md:gap-2 bg-zinc-900/50 backdrop-blur-xl px-3 py-2 rounded-2xl border border-white/8 shadow-xl w-full md:w-auto">
+              <button onClick={shareScreen} title={isScreenSharing ? "Paylaşımı Durdur" : "Ekranı Paylaş"}
+                className={`flex-shrink-0 flex items-center gap-1.5 px-3 h-9 rounded-xl text-xs font-semibold transition-all duration-200 active:scale-90 ${isScreenSharing ? "bg-indigo-500 text-white hover:bg-indigo-600" : "bg-white/10 text-white hover:bg-white/20 border border-transparent"}`}>
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                <span className="whitespace-nowrap">{isScreenSharing ? "⏹ Durdur" : "Ekran"}</span>
+              </button>
 
-                <button onClick={shareScreen} title={isScreenSharing ? "Paylaşımı Durdur" : "Ekranı Paylaş"}
-                  className={`${btnBase} ${isScreenSharing ? "bg-indigo-500 text-white hover:bg-indigo-600 shadow-indigo-500/30" : "bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20"}`}>
-                  <svg className="w-5 h-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  <span className="text-[10px] ml-1 whitespace-nowrap font-semibold hidden sm:inline">{isScreenSharing ? "⏹ Durdur" : "Ekran"}</span>
-                </button>
+              <button onClick={shareBrowserTab} title={isTabSharing ? "Sekme Paylaşımını Durdur" : "Bu Sekmeyi Paylaş"}
+                className={`flex-shrink-0 flex items-center gap-1.5 px-3 h-9 rounded-xl text-xs font-semibold transition-all duration-200 active:scale-90 ${isTabSharing ? "bg-purple-600 text-white hover:bg-purple-700 border border-purple-400/50" : "bg-purple-500/20 text-purple-300 hover:bg-purple-500/40 border border-purple-500/30"}`}>
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 8l2 2 4-4" />
+                </svg>
+                <span className="whitespace-nowrap">{isTabSharing ? "⏹ Durdur" : "📺 Sekme+Ses"}</span>
+              </button>
 
-                <button
-                  onClick={shareBrowserTab}
-                  title={isTabSharing ? "Sekme Paylaşımını Durdur" : "Bu Sekmeyi Sesli Paylaş"}
-                  className={`${btnBase} gap-1 px-2 text-sm font-semibold ${
-                    isTabSharing
-                      ? "bg-purple-600 text-white hover:bg-purple-700 border border-purple-400/50"
-                      : "bg-purple-500/20 text-purple-300 hover:bg-purple-500/40 border border-purple-500/30"
-                  }`}
-                >
-                  <svg className="w-5 h-5 flex-shrink-0 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 8l2 2 4-4" />
-                  </svg>
-                  <span className="text-[10px] whitespace-nowrap font-semibold">{isTabSharing ? "⏹ Durdur" : "📺 Sekme+Ses"}</span>
-                </button>
+              <button onClick={handleHyperbeamClick} title={hyperbeamActive ? "Bulut PC'yi Kapat" : "Bulut PC Başlat"}
+                className={`flex-shrink-0 flex items-center gap-1.5 px-3 h-9 rounded-xl text-xs font-semibold transition-all duration-200 active:scale-90 ${hyperbeamActive ? "bg-gradient-to-r from-pink-500 to-rose-600 text-white border border-rose-400/50 animate-pulse" : "bg-gradient-to-r from-pink-500/20 to-rose-500/20 text-pink-300 hover:from-pink-500/40 hover:to-rose-500/40 border border-pink-500/30"}`}>
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <span className="whitespace-nowrap">{hyperbeamActive ? "⏹ Bulut Kapat" : "☁️ Bulut PC"}</span>
+              </button>
 
-                <button
-                  onClick={handleHyperbeamClick}
-                  title={hyperbeamActive ? "Bulut Tarayıcıyı Sonlandır" : "Sanal Bulut PC Başlat"}
-                  className={`${btnBase} gap-1 px-2 text-sm font-semibold ${
-                    hyperbeamActive
-                      ? "bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-rose-500/30 border border-rose-400/50 animate-pulse"
-                      : "bg-gradient-to-r from-pink-500/20 to-rose-500/20 text-pink-300 hover:from-pink-500/40 hover:to-rose-500/40 border border-pink-500/30"
-                  }`}
-                >
-                  <svg className="w-5 h-5 flex-shrink-0 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                  </svg>
-                  <span className="text-[10px] whitespace-nowrap font-semibold">{hyperbeamActive ? "⏹ Bulut Kapat" : "☁️ Bulut PC"}</span>
-                </button>
+              <button
+                onClick={() => setVideoFit(v => v === "contain" ? "cover" : v === "cover" ? "stretch" : "contain")}
+                title={`Ekran Sığdırma: ${videoFit === "contain" ? "Orjinal" : videoFit === "cover" ? "Doldur" : "Sığdır"}`}
+                className={`flex-shrink-0 flex items-center gap-1.5 px-3 h-9 rounded-xl text-xs font-semibold transition-all duration-200 active:scale-90 ${videoFit !== "contain" ? "bg-pink-500/20 text-pink-400 border border-pink-500/50" : "bg-white/10 text-white border border-transparent hover:bg-white/20"}`}>
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M4 8V7a3 3 0 013-3h10a3 3 0 013 3v1" />
+                  <rect x="6" y="8" width="12" height="8" rx="1" stroke="currentColor" strokeWidth={1.5} fill="none" />
+                </svg>
+                <span className="whitespace-nowrap">{videoFit === "contain" ? "Orjinal" : videoFit === "cover" ? "Doldur" : "Sığdır"}</span>
+              </button>
 
-                <button
-                  onClick={() => setVideoFit(v => v === "contain" ? "cover" : v === "cover" ? "stretch" : "contain")}
-                  title={`Ekran Sığdırma: ${videoFit === "contain" ? "Orjinal" : videoFit === "cover" ? "Doldur" : "Sığdır"}`}
-                  className={`relative ${btnBase} gap-1 px-2 ${videoFit !== "contain" ? "bg-pink-500/20 text-pink-400 border border-pink-500/50" : "bg-white/10 text-white border border-transparent"}`}
-                >
-                  <svg className="w-5 h-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M4 8V7a3 3 0 013-3h10a3 3 0 013 3v1" />
-                    <rect x="6" y="8" width="12" height="8" rx="1" stroke="currentColor" strokeWidth={1.5} fill="none" />
-                  </svg>
-                  <span className="text-[10px] whitespace-nowrap font-semibold">
-                    {videoFit === "contain" ? "Orjinal" : videoFit === "cover" ? "Doldur" : "Sığdır"}
-                  </span>
-                </button>
-
-              </div>
-            )}
+            </div>
             {/* end row 2 */}
 
           </div>
         )}
+
       </div>
 
       {/* SPLIT WEBCAMS CONTAINER (Right 50% on Desktop, Bottom 50% on Mobile) */}
