@@ -40,5 +40,3 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# GIF assets (downloaded at build time, not committed to git)
-/public/gifs/
