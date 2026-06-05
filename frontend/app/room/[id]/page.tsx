@@ -225,6 +225,54 @@ export default function Room() {
   const [showHyperbeamKeyModal, setShowHyperbeamKeyModal] = useState(false);
   const [hyperbeamApiKey, setHyperbeamApiKey] = useState("");
 
+  // Camera layout and UI states
+  const [webcamLayout, setWebcamLayout] = useState<"floating" | "split">("floating");
+  const [hideCameras, setHideCameras] = useState(false);
+  const [hideControls, setHideControls] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isRemoteMuted, setIsRemoteMuted] = useState(false);
+  const isMobile = typeof navigator !== "undefined" && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+
+  // Toast helper
+  const showToast = useCallback((msg: string, ms = 3000) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), ms);
+  }, []);
+
+  // Listen for remote peer mute/camera state via socket
+  useEffect(() => {
+    const handlePeerMuted = ({ muted }: { muted: boolean }) => {
+      setIsRemoteMuted(muted);
+      showToast(muted ? "🎤 Arkadaşınız mikrofonu kapattı" : "🎤 Arkadaşınız mikrofonu açtı");
+    };
+    const handlePeerVideo = ({ videoOff }: { videoOff: boolean }) => {
+      showToast(videoOff ? "📷 Arkadaşınız kamerayı kapattı" : "📷 Arkadaşınız kamerayı açtı");
+    };
+    socket.on("peer-muted", handlePeerMuted);
+    socket.on("peer-video", handlePeerVideo);
+    return () => {
+      socket.off("peer-muted", handlePeerMuted);
+      socket.off("peer-video", handlePeerVideo);
+    };
+  }, [showToast]);
+
+  // Button style constants
+  const btnBase = "flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-2xl transition-all duration-200 active:scale-90";
+  const btnGhost = `${btnBase} bg-white/10 text-white hover:bg-white/20 border border-transparent hover:border-white/20`;
+
+  // Callback refs for split vs floating video elements
+  const setLocalVideoRef = useCallback((el: HTMLVideoElement | null) => {
+    if (el && stream) {
+      el.srcObject = stream;
+    }
+  }, [stream]);
+
+  const setRemoteVideoRef = useCallback((el: HTMLVideoElement | null) => {
+    if (el && remoteStream) {
+      el.srcObject = remoteStream;
+    }
+  }, [remoteStream]);
+
   // Sync address bar input whenever actual URL changes
   useEffect(() => {
     // Hide the igu=1 parameter in the address bar for a cleaner look
@@ -647,8 +695,12 @@ export default function Room() {
           console.error("[Sync iOS Fullscreen] Remote video failed:", err);
         }
       }
+    }
+    // Fallback: standard fullscreen for non-iOS or if webkitEnterFullscreen failed
+    toggleFullscreen();
+  };
 
-    return (
+  return (
     <div className={`w-screen h-[100dvh] bg-[#0f0f11] relative overflow-hidden flex font-sans text-white ${
       webcamLayout === "split" && !hideCameras ? "flex-col md:flex-row" : "items-center justify-center"
     }`}>
