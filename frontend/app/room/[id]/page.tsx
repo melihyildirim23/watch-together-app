@@ -175,8 +175,6 @@ export default function Room() {
     isTabSharing,
     peerConnected,
     screenShareError,
-    showMobileGuide,
-    setShowMobileGuide
   } = useWebRTC(roomId);
 
   // Redirect if room is full
