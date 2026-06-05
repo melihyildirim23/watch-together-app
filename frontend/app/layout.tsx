@@ -13,12 +13,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Watch Together",
+  title: "À Deux, Sempre",
   description: "Birlikte Film İzleme ve Bulut PC Uygulaması",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "WatchTogether",
+    title: "À Deux, Sempre",
   },
 };
 
