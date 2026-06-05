@@ -31,7 +31,7 @@ const QUICK_EMOJIS = [
   "💀", "👻", "👽", "🤖", "🎃", "🌈", "💫", "🌙", "☀️", "💎",
 ];
 
-const getGifUrl = (id: string) => `/api/gif-proxy?id=${id}`;
+const getGifUrl = (id: string) => `/gifs/${id}.gif`;
 
 const GIFS = [
   // 😂 Komik / Kahkaha

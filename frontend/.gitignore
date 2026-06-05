@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# GIF assets (downloaded at build time, not committed to git)
+/public/gifs/
