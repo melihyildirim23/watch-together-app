@@ -253,7 +253,8 @@ app.post("/api/hyperbeam-session", async (req, res) => {
     const data = await response.json();
     hyperbeamSessions[roomId] = {
       embedUrl: data.embed_url,
-      sessionId: data.session_id
+      sessionId: data.session_id,
+      apiKey: apiKey
     };
 
     console.log(`[Hyperbeam] Session created for room ${roomId}: ${data.session_id}`);
@@ -664,6 +665,28 @@ const io = new Server(server, {
 // ---------------------------------------------------------------------------
 const rooms = {};
 
+// Helper: auto-terminate Hyperbeam session when a room empties
+async function terminateHyperbeamForRoom(roomId) {
+  const session = hyperbeamSessions[roomId];
+  if (!session) return;
+  // Notify all clients that cloud is shutting down
+  io.to(roomId).emit("hyperbeam-state", { active: false });
+  // Try to terminate with any stored key — best-effort
+  const savedKey = session.apiKey;
+  if (savedKey && session.sessionId) {
+    try {
+      await fetch(`https://engine.hyperbeam.com/v0/vm/${session.sessionId}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${savedKey}` }
+      });
+      console.log(`[Hyperbeam] Auto-terminated session for empty room ${roomId}`);
+    } catch (err) {
+      console.warn(`[Hyperbeam] Auto-termination failed for room ${roomId}:`, err.message);
+    }
+  }
+  delete hyperbeamSessions[roomId];
+}
+
 // Helper: clean a socket out of every room it occupies
 function removeFromRooms(socketId) {
   for (const roomId of Object.keys(rooms)) {
@@ -675,7 +698,12 @@ function removeFromRooms(socketId) {
     io.to(roomId).emit("peer-disconnected");
     io.to(roomId).emit("users-in-room", [...set]);
 
-    if (set.size === 0) delete rooms[roomId];
+    if (set.size === 0) {
+      // Room is empty — auto-cleanup
+      terminateHyperbeamForRoom(roomId);
+      delete rooms[roomId];
+      console.log(`[Server] Room ${roomId} is empty — cleaned up.`);
+    }
   }
 }
 

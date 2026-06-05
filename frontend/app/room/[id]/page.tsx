@@ -9,35 +9,58 @@ import VideoPlayer from "@/components/VideoPlayer";
 type ReactionItem = { id: number; type: "emoji" | "gif"; content: string };
 
 const QUICK_EMOJIS = [
-  // Smiles & Feelings (30)
-  "😀", "😂", "🤣", "😊", "😇", "🙂", "🙃", "😉", "😌", "😍", "🥰", "😘", "😗", "😙", "😚", "😋", "😛", "😝", "😜", "🤪", "🤨", "🧐", "🤓", "😎", "🤩", "🥳", "😏", "😒", "😞", "😔",
-  // Hand Gestures (30)
-  "👍", "👎", "👌", "👊", "✊", "🤛", "🤜", "🤞", "✌️", "🤟", "🤘", "👈", "👉", "👆", "👇", "☝️", "✋", "🤚", "🖐️", "🖖", "👋", "✍️", "👏", "🙌", "👐", "🤲", "🤝", "🙏", "💅", "🤳",
-  // Hearts & Love (20)
-  "❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", "❤️‍🔥", "❤️‍🩹", "❣️", "💕", "💞", "💓", "💗", "💖", "💘", "💝",
-  // Party & Celebration (15)
-  "🎉", "🎊", "🎈", "🎂", "🎆", "🎇", "🧨", "✨", "🌟", "⭐", "🔔", "🏆", "🎖️", "🔥", "💥",
-  // Expressions / Random (25)
-  "🤔", "😳", "😱", "😨", "😰", "😥", "😢", "😭", "🤤", "🥱", "😴", "🥶", "🥵", "🤢", "🤮", "🤧", "😷", "🤒", "🤕", "👻", "💀", "👽", "👾", "🤖", "🤡"
+  // Gülen / Mutlu
+  "😀", "😂", "🤣", "😊", "😍", "🥰", "😘", "😎", "🤩", "🥳",
+  // Tepkiler
+  "😮", "😱", "😳", "🤯", "😤", "😡", "🤬", "😢", "😭", "🥹",
+  // Komik
+  "😜", "🤪", "😏", "🙄", "😒", "🥱", "😴", "🤤", "🤧", "🤢",
+  // El hareketleri
+  "👍", "👎", "👌", "🤌", "🤞", "✌️", "👏", "🙌", "🤝", "🫶",
+  // Kalpler
+  "❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "💔", "💕", "💗",
+  // Kutlama
+  "🎉", "🎊", "🎈", "🎂", "🏆", "🥇", "✨", "🔥", "💥", "⭐",
+  // Film / Eğlence
+  "🍿", "🎬", "🎭", "🎮", "🎧", "📺", "🎵", "🎤", "🕹️", "🎯",
+  // Hayvanlar
+  "🐱", "🐶", "🐸", "🦊", "🐼", "🐨", "🦁", "🐯", "🐻", "🦋",
+  // Yiyecek
+  "🍕", "🍔", "🌮", "🍜", "🍣", "🍦", "🎂", "🍩", "🧋", "🥤",
+  // Misc eğlenceli
+  "💀", "👻", "👽", "🤖", "🎃", "🌈", "💫", "🌙", "☀️", "💎",
 ];
 
 const GIFS = [
-  { label: "😂 Kahkaha", url: "https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif" },
-  { label: "🎉 Tebrik", url: "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif" },
-  { label: "😍 Aşk", url: "https://media.giphy.com/media/26Ff3yDMoOp5ySMkc/giphy.gif" },
-  { label: "😮 Şok", url: "https://media.giphy.com/media/26ufdipQqU84H52sg/giphy.gif" },
-  { label: "😢 Ağlama", url: "https://media.giphy.com/media/xT9IgG50Lg7rusyxfm/giphy.gif" },
-  { label: "🤦 Ee yani?", url: "https://media.giphy.com/media/3og0IPikp8PxHbyK2Y/giphy.gif" },
-  { label: "🍿 Popcorn", url: "https://media.giphy.com/media/13cptIwW9bgzkA/giphy.gif" },
-  { label: "🔥 Harika", url: "https://media.giphy.com/media/T2vDaYr8y1LRm/giphy.gif" },
-  { label: "🐱 Şirin Kedi", url: "https://media.giphy.com/media/12OMY457Zu7xJG/giphy.gif" },
-  { label: "🍌 Muz Dansı", url: "https://media.giphy.com/media/EluFWEdnZtv1e/giphy.gif" },
-  { label: "👍 Harika", url: "https://media.giphy.com/media/l3q2XhfQ8oCkm1Ts4/giphy.gif" },
-  { label: "🚀 Uçuş", url: "https://media.giphy.com/media/3o7WTBGtbSCEsaU4s0/giphy.gif" },
-  { label: "👻 Dansçı", url: "https://media.giphy.com/media/10pxA5bQx6am8o/giphy.gif" },
-  { label: "👋 Selam", url: "https://media.giphy.com/media/3og0IMJcSI8p6hYQXS/giphy.gif" },
-  { label: "🎬 Sinema", url: "https://media.giphy.com/media/pUeXcg80cO8I8/giphy.gif" }
+  // Kahkaha / Komik
+  { label: "😂 Kahkaha", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbXVtcjl4aG80aHBhMGp5bHBleGNpMGF2dGU0eDFsNXNsazdlNzZxbiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3oEjI6SIIHBdRxXI40/giphy.gif" },
+  { label: "🤣 Yerde Gülüyor", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNmpjZm91eTF4bHk2NHE5OTd3dzN3eWY4NTlteTF1ajd5YWxpMTJ1biZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l4FGJAarb2sJPlXFu/giphy.gif" },
+  { label: "💀 Ölüyorum", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbzBuYnQxemhwN3VlZTdjNnZ4OWZ6bjJxZ214ajNreWl0dGg1N2JkYyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/8vQSQ3cNXuDGo/giphy.gif" },
+  { label: "😹 Kedi Güler", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExb3RhcHdlcmVlcmVueTdxNzBteHRkM3Y2dWNzd2FzYzl3YW8xNTd0YyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/12OMY457Zu7xJG/giphy.gif" },
+  { label: "🙈 Hata Yaptım", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNGo3cXBxbHdpaHo0ZHo4OGhidXRka3B4enU2bnFtYjY2OWcwbjJsZCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3og0IPikp8PxHbyK2Y/giphy.gif" },
+  // Mutlu / Kutlama
+  { label: "🎉 Tebrik", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExaHk1NGdoanhtd3ZnanZnZmhxbXA1bWs0NHkyN3Fqd2oyM2Jrc3BjYiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l0MYt5jPR6QX5pnqM/giphy.gif" },
+  { label: "🥳 Parti", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExdGI5YjFhemI2Nm5hd3Jud3pzazJzbXY5bDFiZXBvNHp4ZWxhY285MyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/26tOZ42Mg6pbTUPHW/giphy.gif" },
+  { label: "👏 Alkış", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMXY0bHhib2FsdXo1am9kbnBxNHV3eHBhYjZwdmVpdWc5cGRlbXZjZiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/7rj2ZgttvgomY/giphy.gif" },
+  { label: "🎊 Konfeti", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExdHVybHlmazV5Y2RzdjAwd3hkMXQ5OGlsY3dxZjcwNXFhZzl4ZzluZCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/g9582DNuQppxC/giphy.gif" },
+  { label: "🔥 Harika", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcWl5dGJscTdub3YzMmZia3BwdnF6NHM2bWZ4cW01bHQ1eGkyazV1ZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/xT2GTgSkMjBOocrBM4/giphy.gif" },
+  // Aşk / Sevgi
+  { label: "😍 Aşk", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExeTlrMnQzNmVqdTR1eTZyeXBkeTJsaDF5dG40Y2VrNDd1aG00cDkxciZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/26Ff3yDMoOp5ySMkc/giphy.gif" },
+  { label: "💕 Kalpler", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExYWY2aXUwYzNucWJnNzQ3aTE3aGlrb2hxbGhpOGk5YmhwNHo0OGdrdyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3rXPNHHzSMtlRGPMqQ/giphy.gif" },
+  // Şok / Sürpriz
+  { label: "😮 Şok", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMnpxcjJ4azZsZHE4dHF1azB5NWMyNWN4OHV2dGJwcHU1dHV3bTZlMyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/26ufdipQqU84H52sg/giphy.gif" },
+  { label: "🤯 Kafam Patladı", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNXh6YmV4ejlzbm9vMndqYzF5bm43ZHR2cW1zeW94dWd0Z3UxeWh4ayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/xT0xeJpnrWC4XWblEk/giphy.gif" },
+  // Ağlama / Üzgün
+  { label: "😢 Ağlama", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExaTZrZmFmMXpxaTdwYzVubXU3N29laTZ5dWs3amRkZWxlajQ3OXZibyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/xT9IgG50Lg7rusyxfm/giphy.gif" },
+  // Film / Popcorn
+  { label: "🍿 Popcorn", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExaTJmaHQ0ZGptNXpocm1zbnV4MnU4OHBobHBoY2lraTVkYmhkb2I2biZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/13cptIwW9bgzkA/giphy.gif" },
+  { label: "🎬 Sinema", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExdm5lenNpb3VrdnBudTd4bW5sNGhsMWR3aGVua29lcW14eHl2ZW9lbCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/pUeXcg80cO8I8/giphy.gif" },
+  { label: "🎵 Dans", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNm5sMm53eDJhNmd3OGZhdXV4ZzVoNnpuYTZzc3EzY2puNnVkNnBieiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l0MYC0LajbaPoEADu/giphy.gif" },
+  { label: "🍌 Muz Dansı", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbmNqZW01OXM5MHZzMWE5dDdkdWZzcHkwOGxtNm51dzdydHljM3d1diZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/EluFWEdnZtv1e/giphy.gif" },
+  { label: "👋 Selam", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExb2c4NW1ycGJ5ZWhsMWVhaDVubDl2NXYxbjc5Y2d3Z3Y5YWdpM3ZkYSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3og0IOIq2j83qSzDyU/giphy.gif" },
+  { label: "🚀 Uçuş", url: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExaW1wbXRkY3RheXcxdXFhM3VucGFpYzVzNzMydmt2aGp0dXVtc3VrdCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o7WTBGtbSCEsaU4s0/giphy.gif" },
 ];
+
 
 export default function Room() {
   const params = useParams();
@@ -61,6 +84,16 @@ export default function Room() {
     showMobileGuide,
     setShowMobileGuide
   } = useWebRTC(roomId);
+
+  // Redirect if room is full
+  useEffect(() => {
+    const handleRoomFull = () => {
+      alert("Bu oda dolu! Şu an 2 kişi mevcut. Yeni bir oda oluştur.");
+      router.push("/");
+    };
+    socket.on("room-full", handleRoomFull);
+    return () => { socket.off("room-full", handleRoomFull); };
+  }, [router]);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
