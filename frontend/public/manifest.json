@@ -1,6 +1,6 @@
 {
-  "name": "Watch Together",
-  "short_name": "WatchTogether",
+  "name": "À Deux, Sempre",
+  "short_name": "À Deux, Sempre",
   "description": "Birlikte eşzamanlı olarak video izleyin ve görüntülü sohbet edin!",
   "start_url": "/",
   "display": "standalone",

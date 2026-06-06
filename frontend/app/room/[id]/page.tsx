@@ -170,6 +170,7 @@ export default function Room() {
     shareBrowserTab,
     isMuted,
     isVideoOff,
+    isRemoteMuted,
     isRemoteVideoOff,
     isScreenSharing,
     isTabSharing,
@@ -228,7 +229,6 @@ export default function Room() {
   const [hideCameras, setHideCameras] = useState(false);
   const [hideControls, setHideControls] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [isRemoteMuted, setIsRemoteMuted] = useState(false);
   const isMobile = typeof navigator !== "undefined" && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
 
   // Toast helper
@@ -237,20 +237,20 @@ export default function Room() {
     setTimeout(() => setToastMessage(null), ms);
   }, []);
 
-  // Listen for remote peer mute/camera state via socket
+  // Listen for remote peer mute/camera state via socket (only for UI toasts, state is managed by useWebRTC)
   useEffect(() => {
-    const handlePeerMuted = ({ muted }: { muted: boolean }) => {
-      setIsRemoteMuted(muted);
+    const handlePeerMuted = ({ enabled }: { enabled: boolean }) => {
+      const muted = !enabled;
       showToast(muted ? "🎤 Arkadaşınız mikrofonu kapattı" : "🎤 Arkadaşınız mikrofonu açtı");
     };
-    const handlePeerVideo = ({ videoOff }: { videoOff: boolean }) => {
-      showToast(videoOff ? "📷 Arkadaşınız kamerayı kapattı" : "📷 Arkadaşınız kamerayı açtı");
+    const handlePeerVideo = ({ enabled }: { enabled: boolean }) => {
+      showToast(!enabled ? "📷 Arkadaşınız kamerayı kapattı" : "📷 Arkadaşınız kamerayı açtı");
     };
-    socket.on("peer-muted", handlePeerMuted);
-    socket.on("peer-video", handlePeerVideo);
+    socket.on("mic-state", handlePeerMuted);
+    socket.on("camera-state", handlePeerVideo);
     return () => {
-      socket.off("peer-muted", handlePeerMuted);
-      socket.off("peer-video", handlePeerVideo);
+      socket.off("mic-state", handlePeerMuted);
+      socket.off("camera-state", handlePeerVideo);
     };
   }, [showToast]);
 
@@ -262,12 +262,14 @@ export default function Room() {
   const setLocalVideoRef = useCallback((el: HTMLVideoElement | null) => {
     if (el && stream) {
       el.srcObject = stream;
+      el.play().catch(() => {});
     }
   }, [stream]);
 
   const setRemoteVideoRef = useCallback((el: HTMLVideoElement | null) => {
     if (el && remoteStream) {
       el.srcObject = remoteStream;
+      el.play().catch(() => {});
     }
   }, [remoteStream]);
 
@@ -363,6 +365,19 @@ export default function Room() {
       remoteVideoRef.current.srcObject = remoteStream;
     }
   }, [remoteStream]);
+
+  // Resume local and remote video playback when camera state returns to enabled (prevents freezing in WebViews)
+  useEffect(() => {
+    if (!isVideoOff && localVideoRef.current) {
+      localVideoRef.current.play().catch(() => {});
+    }
+  }, [isVideoOff]);
+
+  useEffect(() => {
+    if (!isRemoteVideoOff && remoteVideoRef.current) {
+      remoteVideoRef.current.play().catch(() => {});
+    }
+  }, [isRemoteVideoOff]);
 
   // Helper to extract the pure original URL from absolute proxy URLs and preserve all appended query parameters
   const cleanProxyUrl = useCallback((url: string): string => {
