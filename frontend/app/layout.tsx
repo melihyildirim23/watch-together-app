@@ -16,6 +16,7 @@ export const metadata: Metadata = {
   title: "À Deux, Sempre",
   description: "Birlikte Film İzleme ve Bulut PC Uygulaması",
   referrer: "no-referrer",
+  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -29,6 +30,7 @@ export const viewport = {
   maximumScale: 1.0,
   userScalable: false,
   viewportFit: "cover",
+  themeColor: "#7c3aed",
 };
 
 export default function RootLayout({
@@ -41,7 +43,28 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').then(
+                    function(reg) {
+                      console.log('Service Worker registered successfully:', reg.scope);
+                    },
+                    function(err) {
+                      console.log('Service Worker registration failed:', err);
+                    }
+                  );
+                });
+              }
+            `,
+          }}
+        />
+      </body>
     </html>
   );
 }
+
