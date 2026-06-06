@@ -253,7 +253,7 @@ export const useWebRTC = (roomId: string) => {
     if (track) {
       track.enabled = !track.enabled;
       setIsMuted(!track.enabled);
-      socket.emit("mic-state", { roomId, enabled: !track.enabled });
+      socket.emit("mic-state", { roomId, enabled: track.enabled });
     }
   }, [stream, roomId]);
 
@@ -263,7 +263,7 @@ export const useWebRTC = (roomId: string) => {
     if (track) {
       track.enabled = !track.enabled;
       setIsVideoOff(!track.enabled);
-      socket.emit("camera-state", { roomId, enabled: !track.enabled });
+      socket.emit("camera-state", { roomId, enabled: track.enabled });
     }
   }, [stream, roomId]);
 

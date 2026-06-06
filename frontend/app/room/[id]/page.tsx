@@ -260,6 +260,7 @@ export default function Room() {
 
   // Callback refs for split vs floating video elements
   const setLocalVideoRef = useCallback((el: HTMLVideoElement | null) => {
+    localVideoRef.current = el;
     if (el && stream) {
       el.srcObject = stream;
       el.play().catch(() => {});
@@ -267,6 +268,7 @@ export default function Room() {
   }, [stream]);
 
   const setRemoteVideoRef = useCallback((el: HTMLVideoElement | null) => {
+    remoteVideoRef.current = el;
     if (el && remoteStream) {
       el.srcObject = remoteStream;
       el.play().catch(() => {});
